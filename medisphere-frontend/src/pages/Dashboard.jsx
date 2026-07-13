@@ -60,6 +60,8 @@ export const Dashboard = () => {
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: '' });
     }
+    setErrorMsg('');
+    setSuccessMsg('');
   };
 
   const validateForm = () => {
@@ -76,11 +78,11 @@ export const Dashboard = () => {
       errors.email = 'Invalid email address';
     }
 
-    const phoneStr = String(formData.phoneno);
+    const phoneStr = String(formData.phoneno).trim();
     if (!formData.phoneno) {
       errors.phoneno = 'Phone number is required';
-    } else if (phoneStr.length < 10) {
-      errors.phoneno = 'Must be at least 10 digits';
+    } else if (!/^\d{10}$/.test(phoneStr)) {
+      errors.phoneno = 'Phone number must be exactly 10 digits';
     }
 
     setFormErrors(errors);
@@ -117,7 +119,8 @@ export const Dashboard = () => {
       }, 1500);
     } catch (err) {
       console.error(err);
-      setErrorMsg('Failed to register patient. Verify API connection.');
+      const errMsg = err.response?.data?.message || err.response?.data || 'Failed to register patient.';
+      setErrorMsg(errMsg);
     } finally {
       setSaving(false);
     }

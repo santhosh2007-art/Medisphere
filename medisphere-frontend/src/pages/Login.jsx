@@ -1,44 +1,161 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Activity, User, Key, Users, AlertTriangle } from 'lucide-react';
+import { Shield, Activity, User, Key, Users, AlertTriangle, UserPlus, CheckCircle } from 'lucide-react';
 import { api } from '../services/api';
 
 export const Login = () => {
-  const { login, loading, error } = useAuth();
+  const { login, loading, error: authError } = useAuth();
   const [role, setRole] = useState('PROVIDER'); // 'PROVIDER' or 'PATIENT'
+  const [patientTab, setPatientTab] = useState('SIGNIN'); // 'SIGNIN' or 'SIGNUP'
+  
+  // Clinician credentials
   const [username, setUsername] = useState('doctor');
-  const [password, setPassword] = useState('password123');
-  const [patients, setPatients] = useState([]);
-  const [selectedPatientId, setSelectedPatientId] = useState('');
-  const [patientsLoading, setPatientsLoading] = useState(false);
+  const [password, setPassword] = useState('doctor');
+  
+  // Patient Sign In credentials
+  const [patientEmail, setPatientEmail] = useState('');
+  const [patientPhone, setPatientPhone] = useState('');
+  
+  // Patient Sign Up fields
+  const [signUpData, setSignUpData] = useState({
+    firstname: '',
+    lastname: '',
+    gender: 'Male',
+    dob: '',
+    email: '',
+    phoneno: '',
+    address: ''
+  });
 
-  useEffect(() => {
-    const fetchAllPatients = async () => {
-      setPatientsLoading(true);
-      try {
-        const res = await api.getPatients();
-        const patientList = res.data || [];
-        setPatients(patientList);
-        if (patientList.length > 0) {
-          setSelectedPatientId(patientList[0].patientId);
-        }
-      } catch (err) {
-        console.error('Error fetching patients for login:', err);
-      } finally {
-        setPatientsLoading(false);
-      }
-    };
-    fetchAllPatients();
-  }, []);
+  // UI status
+  const [localError, setLocalError] = useState('');
+  const [localSuccess, setLocalSuccess] = useState('');
+  const [signUpSaving, setSignUpSaving] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSignUpChange = (e) => {
+    const { name, value } = e.target;
+    setSignUpData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleClinicianSubmit = async (e) => {
     e.preventDefault();
-    if (role === 'PATIENT') {
-      const selectedPatient = patients.find(p => p.patientId === selectedPatientId);
-      const patientName = selectedPatient ? `${selectedPatient.firstname} ${selectedPatient.lastname}` : 'Patient User';
-      await login('', '', 'PATIENT', selectedPatientId, patientName);
-    } else {
-      await login(username, password, 'PROVIDER');
+    setLocalError('');
+    setLocalSuccess('');
+    await login(username, password, 'PROVIDER');
+  };
+
+  const handlePatientSignIn = async (e) => {
+    e.preventDefault();
+    setLocalError('');
+    setLocalSuccess('');
+    
+    if (!patientEmail || !patientPhone) {
+      setLocalError('Please fill in both Email and Phone Number.');
+      return;
+    }
+
+    try {
+      // Fetch all patients from backend
+      const res = await api.getPatients();
+      const patientList = res.data || [];
+      
+      // Find patient matching email and phone number
+      const foundPatient = patientList.find(p => 
+        p.email && p.email.trim().toLowerCase() === patientEmail.trim().toLowerCase() &&
+        String(p.phoneno).trim() === patientPhone.trim()
+      );
+
+      if (foundPatient) {
+        const patientName = `${foundPatient.firstname} ${foundPatient.lastname}`;
+        const success = await login(foundPatient.email, String(foundPatient.phoneno), 'PATIENT', foundPatient.patientId, patientName);
+        if (success) {
+          setLocalSuccess(`Welcome back, ${patientName}!`);
+        }
+      } else {
+        setLocalError('No matching patient profile found. Please verify your Email and Phone Number, or Sign Up.');
+      }
+    } catch (err) {
+      console.error('Error fetching patients for sign in:', err);
+      setLocalError('Failed to fetch patient data from database. Verify services are running.');
+    }
+  };
+
+  const handlePatientSignUp = async (e) => {
+    e.preventDefault();
+    setLocalError('');
+    setLocalSuccess('');
+    setSignUpSaving(true);
+
+    const { firstname, lastname, gender, dob, email, phoneno, address } = signUpData;
+    if (!firstname || !lastname || !gender || !dob || !email || !phoneno || !address) {
+      setLocalError('Please fill in all fields to register.');
+      setSignUpSaving(false);
+      return;
+    }
+
+    const phoneStr = String(phoneno).trim();
+    if (!/^\d{10}$/.test(phoneStr)) {
+      setLocalError('Phone number must be exactly 10 digits.');
+      setSignUpSaving(false);
+      return;
+    }
+
+    const phoneNum = Number(phoneStr);
+
+    try {
+      const payload = {
+        firstname,
+        lastname,
+        gender,
+        dob,
+        email,
+        phoneno: phoneNum,
+        address
+      };
+
+      // 1. Save patient details to database
+      const saveRes = await api.savePatient(payload);
+      const newPatient = saveRes.data;
+
+      if (!newPatient || !newPatient.patientId) {
+        throw new Error('Failed to obtain registered patient ID.');
+      }
+
+      // 2. Automatically save default GRANTED HIPAA Consent record
+      const consentPayload = {
+        patientId: newPatient.patientId,
+        consenttype: 'FULL_ACCESS',
+        status: 'GRANTED',
+        granteddate: new Date().toISOString().split('T')[0],
+        expirydate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+      await api.saveConsent(consentPayload);
+
+      // 3. Automatically save default Health Twin record
+      const twinPayload = {
+        patientId: newPatient.patientId,
+        bloodgroup: 'O+',
+        height: 170,
+        weight: 65,
+        temperature: 98.6,
+        disease: 'None'
+      };
+      await api.saveHealthTwin(twinPayload);
+
+      setLocalSuccess('Registration successful! Logging you in...');
+      
+      // 4. Log in immediately
+      const patientName = `${newPatient.firstname} ${newPatient.lastname}`;
+      await login(newPatient.email, String(newPatient.phoneno), 'PATIENT', newPatient.patientId, patientName);
+    } catch (err) {
+      console.error('Registration failed:', err);
+      const errMsg = err.response?.data?.message || err.response?.data || 'Error registering new patient in the database. Ensure services are online.';
+      setLocalError(errMsg);
+    } finally {
+      setSignUpSaving(false);
     }
   };
 
@@ -65,105 +182,264 @@ export const Login = () => {
           <button
             type="button"
             style={{ ...styles.roleTab, ...(role === 'PROVIDER' ? styles.activeRoleTab : {}) }}
-            onClick={() => setRole('PROVIDER')}
-            disabled={loading}
+            onClick={() => { setRole('PROVIDER'); setLocalError(''); setLocalSuccess(''); }}
+            disabled={loading || signUpSaving}
           >
             <User size={16} /> Clinician / Doctor
           </button>
           <button
             type="button"
             style={{ ...styles.roleTab, ...(role === 'PATIENT' ? styles.activeRoleTab : {}) }}
-            onClick={() => setRole('PATIENT')}
-            disabled={loading}
+            onClick={() => { setRole('PATIENT'); setLocalError(''); setLocalSuccess(''); }}
+            disabled={loading || signUpSaving}
           >
             <Users size={16} /> Patient
           </button>
         </div>
 
-        {/* Error Alert */}
-        {error && (
+        {/* Local Error Alert / Success Alert */}
+        {(localError || authError) && (
           <div style={styles.errorAlert}>
             <AlertTriangle size={18} color="#f43f5e" style={{ flexShrink: 0 }} />
-            <span>{error}</span>
+            <span>{localError || authError}</span>
           </div>
         )}
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} style={styles.form}>
-          {role === 'PROVIDER' ? (
-            <>
-              <div className="form-group">
-                <label className="form-label" htmlFor="username">
-                  <span style={styles.labelSpan}><User size={16} /> Username</span>
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  className="form-input"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={loading}
-                  required
-                />
-              </div>
+        {localSuccess && (
+          <div style={styles.successAlert}>
+            <CheckCircle size={18} color="#10b981" style={{ flexShrink: 0 }} />
+            <span>{localSuccess}</span>
+          </div>
+        )}
 
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label className="form-label" htmlFor="password">
-                  <span style={styles.labelSpan}><Key size={16} /> Password</span>
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  className="form-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  required
-                />
-              </div>
-            </>
-          ) : (
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label className="form-label" htmlFor="patientSelect">
-                <span style={styles.labelSpan}><Users size={16} /> Select Patient Profile</span>
+        {/* Clinician Form */}
+        {role === 'PROVIDER' && (
+          <form onSubmit={handleClinicianSubmit} style={styles.form}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="username">
+                <span style={styles.labelSpan}><User size={16} /> Username</span>
               </label>
-              {patientsLoading ? (
-                <div style={{ color: '#94a3b8', fontSize: '0.9rem', padding: '10px 0', textAlign: 'center' }}>
-                  Loading patient list...
-                </div>
-              ) : patients.length === 0 ? (
-                <div style={{ color: '#f43f5e', fontSize: '0.85rem', padding: '10px 0', textAlign: 'left', lineHeight: '1.4' }}>
-                  No patients found in MongoDB database. Please sign in as a Clinician first to register a patient record.
-                </div>
-              ) : (
-                <select
-                  id="patientSelect"
-                  className="form-select"
-                  value={selectedPatientId}
-                  onChange={(e) => setSelectedPatientId(e.target.value)}
-                  disabled={loading}
-                  style={styles.selectInput}
-                  required
-                >
-                  {patients.map(p => (
-                    <option key={p.patientId} value={p.patientId}>
-                      {p.firstname} {p.lastname} ({p.email})
-                    </option>
-                  ))}
-                </select>
-              )}
+              <input
+                id="username"
+                type="text"
+                className="form-input"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+                required
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={styles.submitBtn}
-            disabled={loading || (role === 'PATIENT' && patients.length === 0)}
-          >
-            {loading ? 'Authenticating...' : role === 'PROVIDER' ? 'Sign In as Clinician' : 'Sign In as Patient'}
-          </button>
-        </form>
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label className="form-label" htmlFor="password">
+                <span style={styles.labelSpan}><Key size={16} /> Password</span>
+              </label>
+              <input
+                id="password"
+                type="password"
+                className="form-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={styles.submitBtn}
+              disabled={loading}
+            >
+              {loading ? 'Authenticating...' : 'Sign In as Clinician'}
+            </button>
+          </form>
+        )}
+
+        {/* Patient Forms */}
+        {role === 'PATIENT' && (
+          <div style={styles.patientSubContainer}>
+            {/* Patient Sub Tabs */}
+            <div style={styles.subTabBar}>
+              <button
+                type="button"
+                style={{ ...styles.subTabButton, ...(patientTab === 'SIGNIN' ? styles.activeSubTabButton : {}) }}
+                onClick={() => { setPatientTab('SIGNIN'); setLocalError(''); setLocalSuccess(''); }}
+                disabled={signUpSaving}
+              >
+                <User size={14} /> Sign In
+              </button>
+              <button
+                type="button"
+                style={{ ...styles.subTabButton, ...(patientTab === 'SIGNUP' ? styles.activeSubTabButton : {}) }}
+                onClick={() => { setPatientTab('SIGNUP'); setLocalError(''); setLocalSuccess(''); }}
+                disabled={signUpSaving}
+              >
+                <UserPlus size={14} /> Sign Up (Register)
+              </button>
+            </div>
+
+            {/* Patient Sign In Form */}
+            {patientTab === 'SIGNIN' && (
+              <form onSubmit={handlePatientSignIn} style={styles.form}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="patientEmail">
+                    <span style={styles.labelSpan}><User size={16} /> Email Address</span>
+                  </label>
+                  <input
+                    id="patientEmail"
+                    type="email"
+                    className="form-input"
+                    placeholder="name@example.com"
+                    value={patientEmail}
+                    onChange={(e) => setPatientEmail(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" htmlFor="patientPhone">
+                    <span style={styles.labelSpan}><Key size={16} /> Phone Number</span>
+                  </label>
+                  <input
+                    id="patientPhone"
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter phone number"
+                    value={patientPhone}
+                    onChange={(e) => setPatientPhone(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={styles.submitBtn}
+                  disabled={loading}
+                >
+                  {loading ? 'Verifying...' : 'Sign In as Patient'}
+                </button>
+              </form>
+            )}
+
+            {/* Patient Sign Up Form */}
+            {patientTab === 'SIGNUP' && (
+              <form onSubmit={handlePatientSignUp} style={styles.signUpFormScroll}>
+                <div style={styles.formGrid}>
+                  <div className="form-group">
+                    <label className="form-label">First Name</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      name="firstname"
+                      value={signUpData.firstname}
+                      onChange={handleSignUpChange}
+                      disabled={signUpSaving}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Last Name</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      name="lastname"
+                      value={signUpData.lastname}
+                      onChange={handleSignUpChange}
+                      disabled={signUpSaving}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={styles.formGrid}>
+                  <div className="form-group">
+                    <label className="form-label">Gender</label>
+                    <select
+                      className="form-select"
+                      name="gender"
+                      value={signUpData.gender}
+                      onChange={handleSignUpChange}
+                      disabled={signUpSaving}
+                      style={styles.selectInput}
+                      required
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Date of Birth</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      name="dob"
+                      value={signUpData.dob}
+                      onChange={handleSignUpChange}
+                      disabled={signUpSaving}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    name="email"
+                    value={signUpData.email}
+                    onChange={handleSignUpChange}
+                    disabled={signUpSaving}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Phone Number (used for login)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    name="phoneno"
+                    placeholder="e.g. 9894477190"
+                    value={signUpData.phoneno}
+                    onChange={handleSignUpChange}
+                    disabled={signUpSaving}
+                    required
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '24px' }}>
+                  <label className="form-label">Residential Address</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    name="address"
+                    value={signUpData.address}
+                    onChange={handleSignUpChange}
+                    disabled={signUpSaving}
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-success"
+                  style={styles.submitBtn}
+                  disabled={signUpSaving}
+                >
+                  {signUpSaving ? 'Registering...' : 'Register & Log In'}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -179,7 +455,7 @@ const styles = {
   },
   loginCard: {
     width: '100%',
-    maxWidth: '460px',
+    maxWidth: '480px',
     padding: '36px 32px',
     display: 'flex',
     flexDirection: 'column',
@@ -259,6 +535,37 @@ const styles = {
     color: '#0d9488',
     border: '1px solid rgba(13, 148, 136, 0.2)',
   },
+  patientSubContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  subTabBar: {
+    display: 'flex',
+    background: 'rgba(15, 23, 42, 0.2)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    paddingBottom: '2px',
+    gap: '12px',
+  },
+  subTabButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 12px',
+    background: 'none',
+    border: 'none',
+    color: '#64748b',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    borderBottom: '2px solid transparent',
+    transition: 'all 0.2s',
+    outline: 'none',
+  },
+  activeSubTabButton: {
+    color: '#0d9488',
+    borderBottom: '2px solid #0d9488',
+  },
   errorAlert: {
     display: 'flex',
     gap: '10px',
@@ -270,9 +577,32 @@ const styles = {
     fontSize: '0.88rem',
     alignItems: 'center',
   },
+  successAlert: {
+    display: 'flex',
+    gap: '10px',
+    padding: '12px 16px',
+    background: 'rgba(16, 185, 129, 0.1)',
+    border: '1px solid rgba(16, 185, 129, 0.2)',
+    borderRadius: '8px',
+    color: '#10b981',
+    fontSize: '0.88rem',
+    alignItems: 'center',
+  },
   form: {
     display: 'flex',
     flexDirection: 'column',
+  },
+  signUpFormScroll: {
+    display: 'flex',
+    flexDirection: 'column',
+    maxHeight: '360px',
+    overflowY: 'auto',
+    paddingRight: '8px',
+  },
+  formGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '12px',
   },
   labelSpan: {
     display: 'inline-flex',

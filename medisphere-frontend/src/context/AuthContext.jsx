@@ -40,10 +40,13 @@ export const AuthProvider = ({ children }) => {
           patientId: patientId
         };
       } else {
+        if (username !== 'doctor' || password !== 'doctor') {
+          throw new Error('Invalid clinician credentials. Use username "doctor" and password "doctor".');
+        }
         loggedInUser = {
-          username: username || 'doctor',
+          username: username,
           roles: ['PROVIDER', 'CLINICIAN'],
-          name: username || 'Dr. Specialist'
+          name: 'Dr. Specialist'
         };
       }
 
@@ -60,7 +63,7 @@ export const AuthProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error('Login error:', err);
-      setError('Login failed');
+      setError(err.message || 'Login failed');
       setLoading(false);
       return false;
     }
