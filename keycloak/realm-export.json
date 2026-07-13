@@ -1,0 +1,36 @@
+{
+  "realm": "medisphere",
+  "enabled": true,
+  "accessTokenLifespan": 3600,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "medisphere-client",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "clinician", "description": "Can view and update patient data" }
+    ]
+  },
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "credentials": [
+        { "type": "password", "value": "password123", "temporary": false }
+      ],
+      "realmRoles": ["clinician"]
+    }
+  ]
+}
