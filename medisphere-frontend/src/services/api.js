@@ -82,6 +82,24 @@ const saveSandboxVitals = (data) => localStorage.setItem('sandbox_vitals', JSON.
 const getSandboxAudits = () => JSON.parse(localStorage.getItem('sandbox_audits') || '[]');
 const saveSandboxAudits = (data) => localStorage.setItem('sandbox_audits', JSON.stringify(data));
 
+const getSandboxPredictions = () => JSON.parse(localStorage.getItem('sandbox_predictions') || '[]');
+const saveSandboxPredictions = (data) => localStorage.setItem('sandbox_predictions', JSON.stringify(data));
+const getSandboxExplanations = () => JSON.parse(localStorage.getItem('sandbox_explanations') || '[]');
+const saveSandboxExplanations = (data) => localStorage.setItem('sandbox_explanations', JSON.stringify(data));
+const getSandboxModels = () => {
+  const data = localStorage.getItem('sandbox_models');
+  if (!data) {
+    const defaultModels = [
+      { version: '1.0', accuracy: 91.4, createdDate: '2026-07-12', status: 'ACTIVE' }
+    ];
+    localStorage.setItem('sandbox_models', JSON.stringify(defaultModels));
+    return defaultModels;
+  }
+  return JSON.parse(data);
+};
+const saveSandboxModels = (data) => localStorage.setItem('sandbox_models', JSON.stringify(data));
+
+
 const addAuditLog = (patientId, action) => {
   const audits = getSandboxAudits();
   audits.unshift({
@@ -356,5 +374,198 @@ export const api = {
       };
     }
     return client.get(`/fhir/patient/${patientId}`);
+  },
+
+  // AI PREDICTION
+  predictCvd: async (patientId) => {
+    if (isSandboxMode()) {
+      const preds = getSandboxPredictions();
+      const newPred = {
+        id: crypto.randomUUID(),
+        patientId,
+        riskType: 'CARDIO',
+        riskPercentage: 27.4,
+        riskLevel: 'HIGH',
+        confidence: 94,
+        predictionDate: new Date().toISOString().split('T')[0],
+        modelVersion: '1.0'
+      };
+      preds.push(newPred);
+      saveSandboxPredictions(preds);
+      addAuditLog(patientId, 'RUN_AI_CVD_PREDICTION');
+      return { data: newPred };
+    }
+    return client.post('/api/prediction/cvd', { patientId });
+  },
+
+  predictDiabetes: async (patientId) => {
+    if (isSandboxMode()) {
+      const preds = getSandboxPredictions();
+      const newPred = {
+        id: crypto.randomUUID(),
+        patientId,
+        riskType: 'DIABETES',
+        riskPercentage: 18.6,
+        riskLevel: 'MEDIUM',
+        confidence: 91,
+        predictionDate: new Date().toISOString().split('T')[0],
+        modelVersion: '1.0'
+      };
+      preds.push(newPred);
+      saveSandboxPredictions(preds);
+      addAuditLog(patientId, 'RUN_AI_DIABETES_PREDICTION');
+      return { data: newPred };
+    }
+    return client.post('/api/prediction/diabetes', { patientId });
+  },
+
+  getPredictionHistory: async (patientId) => {
+    if (isSandboxMode()) {
+      const preds = getSandboxPredictions().filter(x => x.patientId === patientId);
+      return { data: preds };
+    }
+    return client.get(`/api/prediction/history/${patientId}`);
+  },
+
+  getLatestPrediction: async (patientId) => {
+    if (isSandboxMode()) {
+      const preds = getSandboxPredictions().filter(x => x.patientId === patientId);
+      return { data: preds[preds.length - 1] || null };
+    }
+    return client.get(`/api/prediction/latest/${patientId}`);
+  },
+
+  getExplanation: async (patientId) => {
+    if (isSandboxMode()) {
+      const exps = getSandboxExplanations().filter(x => x.patientId === patientId);
+      if (exps.length === 0) {
+        return {
+          data: {
+            patientId,
+            risk: 'HIGH',
+            factors: [
+              'Blood Pressure: +20%',
+              'HbA1c: +18%',
+              'BMI: +12%',
+              'Heart Rate: +5%'
+            ]
+          }
+        };
+      }
+      return { data: exps[exps.length - 1] };
+    }
+    return client.get(`/api/explanation/${patientId}`);
+  },
+
+  generateExplanation: async (patientId) => {
+    if (isSandboxMode()) {
+      const exps = getSandboxExplanations();
+      const newExp = {
+        id: crypto.randomUUID(),
+        patientId,
+        risk: 'HIGH',
+        factors: [
+          'Blood Pressure: +20%',
+          'HbA1c: +18%',
+          'BMI: +12%',
+          'Heart Rate: +5%'
+        ]
+      };
+      exps.push(newExp);
+      saveSandboxExplanations(exps);
+      addAuditLog(patientId, 'GENERATE_AI_EXPLANATION');
+      return { data: newExp };
+    }
+    return client.post(`/api/explanation/${patientId}`);
+  },
+
+  getAllModels: async () => {
+    if (isSandboxMode()) {
+      return { data: getSandboxModels() };
+    }
+    return client.get('/api/model');
+  },
+
+  getLatestModel: async () => {
+    if (isSandboxMode()) {
+      const active = getSandboxModels().find(m => m.status === 'ACTIVE');
+      return { data: active || getSandboxModels()[0] };
+    }
+    return client.get('/api/model/latest');
+  },
+
+  addModel: async (modelData) => {
+    if (isSandboxMode()) {
+      const models = getSandboxModels();
+      const newM = {
+        ...modelData,
+        createdDate: new Date().toISOString().split('T')[0]
+      };
+      models.push(newM);
+      saveSandboxModels(models);
+      return { data: newM };
+    }
+    return client.post('/api/model', modelData);
+  },
+
+  activateModel: async (version) => {
+    if (isSandboxMode()) {
+      const models = getSandboxModels();
+      const updated = models.map(m => {
+        if (m.version === version) {
+          m.status = 'ACTIVE';
+        } else {
+          m.status = 'INACTIVE';
+        }
+        return m;
+      });
+      saveSandboxModels(updated);
+      return { data: updated.find(m => m.version === version) };
+    }
+    return client.put(`/api/model/${version}`);
+  },
+
+  deleteModel: async (version) => {
+    if (isSandboxMode()) {
+      const models = getSandboxModels().filter(m => m.version !== version);
+      saveSandboxModels(models);
+      return { data: 'Model deleted' };
+    }
+    return client.delete(`/api/model/${version}`);
+  },
+
+  getPredictionAccuracy: async () => {
+    if (isSandboxMode()) {
+      return { data: { accuracy: 92.5, validationSetSize: 1500, precision: 91.2, recall: 93.8 } };
+    }
+    return client.get('/api/prediction/accuracy');
+  },
+
+  getPredictionCalibration: async () => {
+    if (isSandboxMode()) {
+      return { data: { brierScore: 0.084, calibrated: true } };
+    }
+    return client.get('/api/prediction/calibration');
+  },
+
+  getPredictionBiasAudit: async () => {
+    if (isSandboxMode()) {
+      return { data: { disparateImpactRatio: 0.98, status: 'COMPLIANT' } };
+    }
+    return client.get('/api/prediction/bias-audit');
+  },
+
+  validateExplanationApi: async () => {
+    if (isSandboxMode()) {
+      return { data: { shapValuesConvergence: 98.4, faithfulnessMetric: 0.94 } };
+    }
+    return client.get('/api/explanation/validate');
+  },
+
+  getModelStatus: async () => {
+    if (isSandboxMode()) {
+      return { data: { federatedRound: 14, convergenceStatus: 'STABLE' } };
+    }
+    return client.get('/api/model/status');
   }
 };
