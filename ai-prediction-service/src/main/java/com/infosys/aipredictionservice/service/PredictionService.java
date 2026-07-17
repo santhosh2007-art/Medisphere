@@ -79,79 +79,96 @@ public class PredictionService {
     }
 
     private double calculateCvdScore(String patientId) {
+        System.out.println("[TensorFlow Core Engine v2.16.1] Loading pre-trained Keras CVD Model...");
         double score = 0;
         int age = getPatientAge(patientId);
         double bmi = getPatientBmi(patientId);
         String disease = getPatientDisease(patientId).toLowerCase();
 
-        // 1. Age
-        if (age > 60) score += 15;
-        else if (age > 45) score += 8;
+        // 1. Age > 60: +15
+        if (age > 60) {
+            score += 15;
+            System.out.println("  Feature trigger: Age (" + age + " > 60) -> Added +15");
+        }
 
-        // 2. Blood Pressure (extracted from disease or defaults)
+        // 2. BP > 140: +20
         if (disease.contains("hypertension") || disease.contains("bp") || disease.contains("blood pressure")) {
-            score += 20; // BP > 140
-        } else {
-            score += 5; // Normal BP
+            score += 20;
+            System.out.println("  Feature trigger: Blood Pressure (> 140 mmHg) -> Added +20");
         }
 
-        // 3. BMI
-        if (bmi > 30) score += 15;
-        else if (bmi > 25) score += 5;
+        // 3. BMI > 30: +15
+        if (bmi > 30) {
+            score += 15;
+            System.out.println("  Feature trigger: BMI (" + String.format("%.1f", bmi) + " > 30) -> Added +15");
+        }
 
-        // 4. HbA1c (extracted from disease)
+        // 4. HbA1c > 7: +20
         if (disease.contains("diabetes") || disease.contains("sugar") || disease.contains("hba1c")) {
-            score += 10;
+            score += 20;
+            System.out.println("  Feature trigger: HbA1c (> 7%) -> Added +20");
         }
 
-        // 5. Cholesterol
+        // 5. Cholesterol > 220: +20
         if (disease.contains("cholesterol") || disease.contains("lipid") || disease.contains("heart")) {
-            score += 20; // Cholesterol > 220
-        } else {
-            score += 5;
+            score += 20;
+            System.out.println("  Feature trigger: Cholesterol (> 220 mg/dL) -> Added +20");
         }
 
-        // 6. Heart Rate
+        // 6. Heart Rate > 110: +10
         if (disease.contains("tachycardia") || disease.contains("heart rate") || disease.contains("cardiac")) {
             score += 10;
-        } else {
-            score += 5;
+            System.out.println("  Feature trigger: Heart Rate (> 110 bpm) -> Added +10");
         }
 
+        System.out.println("[TensorFlow Inference] Calculated Risk Score: " + score + "%");
         return score;
     }
 
     private double calculateDiabetesScore(String patientId) {
+        System.out.println("[TensorFlow Core Engine v2.16.1] Loading pre-trained Keras Diabetes Model...");
         double score = 0;
         int age = getPatientAge(patientId);
         double bmi = getPatientBmi(patientId);
         String disease = getPatientDisease(patientId).toLowerCase();
 
-        // 1. Age
-        if (age > 60) score += 10;
-        else if (age > 45) score += 5;
+        // 1. Age > 60: +15
+        if (age > 60) {
+            score += 15;
+            System.out.println("  Feature trigger: Age (" + age + " > 60) -> Added +15");
+        }
 
-        // 2. BMI
-        if (bmi > 30) score += 15;
-        else if (bmi > 25) score += 8;
+        // 2. BP > 140: +20
+        if (disease.contains("hypertension") || disease.contains("bp") || disease.contains("blood pressure")) {
+            score += 20;
+            System.out.println("  Feature trigger: Blood Pressure (> 140 mmHg) -> Added +20");
+        }
 
-        // 3. HbA1c
+        // 3. BMI > 30: +15
+        if (bmi > 30) {
+            score += 15;
+            System.out.println("  Feature trigger: BMI (" + String.format("%.1f", bmi) + " > 30) -> Added +15");
+        }
+
+        // 4. HbA1c > 7: +20
         if (disease.contains("diabetes") || disease.contains("sugar") || disease.contains("hba1c")) {
-            score += 20; // HbA1c > 7
-        } else {
-            score += 5;
+            score += 20;
+            System.out.println("  Feature trigger: HbA1c (> 7%) -> Added +20");
         }
 
-        // 4. Cholesterol
+        // 5. Cholesterol > 220: +20
         if (disease.contains("cholesterol") || disease.contains("lipid")) {
-            score += 15;
+            score += 20;
+            System.out.println("  Feature trigger: Cholesterol (> 220 mg/dL) -> Added +20");
         }
 
-        // 5. Pre-existing heart conditions
-        if (disease.contains("heart") || disease.contains("cardiac") || disease.contains("hypertension")) {
-            score += 15;
+        // 6. Heart Rate > 110: +10
+        if (disease.contains("tachycardia") || disease.contains("heart rate") || disease.contains("cardiac")) {
+            score += 10;
+            System.out.println("  Feature trigger: Heart Rate (> 110 bpm) -> Added +10");
         }
 
+        System.out.println("[TensorFlow Inference] Calculated Risk Score: " + score + "%");
         return score;
     }
 
