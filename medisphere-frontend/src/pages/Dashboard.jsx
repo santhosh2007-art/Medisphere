@@ -182,6 +182,18 @@ export const Dashboard = () => {
     }
   };
 
+  const calculateAge = (dobString) => {
+    if (!dobString) return '';
+    try {
+      const dob = new Date(dobString);
+      const diffMs = Date.now() - dob.getTime();
+      const ageDate = new Date(diffMs);
+      return Math.abs(ageDate.getUTCFullYear() - 1970) + ' Yrs';
+    } catch {
+      return '';
+    }
+  };
+
   const filteredPatients = patients.filter(p => {
     const fullName = `${p.firstname} ${p.lastname}`.toLowerCase();
     const email = p.email.toLowerCase();
@@ -191,6 +203,16 @@ export const Dashboard = () => {
 
   return (
     <div style={styles.dashboardContainer}>
+      {/* Top Header Section */}
+      <div style={styles.headerBlock}>
+        <div style={styles.headerTextContainer}>
+          <h1 style={styles.mainTitle}>Patient Directory Workspace</h1>
+          <p style={styles.mainSubtitle}>
+            Onboard new patients, validate FHIR HL7 models, and explore real-time holographic digital twins.
+          </p>
+        </div>
+      </div>
+
       {/* Stats Cards Row */}
       <div style={styles.statsRow}>
         <div className="glass-card" style={styles.statCard}>
@@ -198,7 +220,7 @@ export const Dashboard = () => {
             <Users size={20} />
           </div>
           <div style={styles.statInfo}>
-            <span style={styles.statLabel}>Total Patients</span>
+            <span style={styles.statLabel}>Total Registrations</span>
             <span style={styles.statValue}>{loading ? '...' : patients.length}</span>
           </div>
         </div>
@@ -209,7 +231,7 @@ export const Dashboard = () => {
           </div>
           <div style={styles.statInfo}>
             <span style={styles.statLabel}>FHIR Sync Status</span>
-            <span style={styles.statValue}>Active</span>
+            <span style={styles.statValue}>ACTIVE</span>
           </div>
         </div>
 
@@ -219,7 +241,7 @@ export const Dashboard = () => {
           </div>
           <div style={styles.statInfo}>
             <span style={styles.statLabel}>HIPAA Auditing</span>
-            <span style={styles.statValue}>Enforced</span>
+            <span style={styles.statValue}>ENFORCED</span>
           </div>
         </div>
       </div>
@@ -228,29 +250,29 @@ export const Dashboard = () => {
       <div className="glass-card" style={styles.mainCard}>
         <div style={styles.cardHeader}>
           <div>
-            <h2 style={styles.cardTitle}>Patient Directory</h2>
-            <p style={{ fontSize: '0.88rem', color: '#94a3b8', marginTop: '4px' }}>
-              Register new patients, sync with EHR sandboxes, or view their digital twin details.
+            <h2 style={styles.cardTitle}>Registered Patient List</h2>
+            <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '4px' }}>
+              Select any profile row to launch their clinical digital twin visualizer.
             </p>
           </div>
           <div style={styles.actionRow}>
             <button className="btn btn-secondary" onClick={() => { setFhirLogs([]); setShowFhirModal(true); }}>
-              <RefreshCw size={18} />
-              FHIR Integrations
+              <RefreshCw size={16} />
+              FHIR Hub
             </button>
             <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-              <Plus size={18} />
-              Register Patient
+              <Plus size={16} />
+              Onboard Patient
             </button>
           </div>
         </div>
 
         {/* Search Input Bar */}
         <div style={styles.searchBar}>
-          <Search size={18} color="#94a3b8" />
+          <Search size={18} color="#64748b" />
           <input
             type="text"
-            placeholder="Search patients by name or email..."
+            placeholder="Search patients by name, email, or credentials..."
             style={styles.searchInput}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -266,19 +288,19 @@ export const Dashboard = () => {
         ) : filteredPatients.length === 0 ? (
           <div style={styles.emptyContainer}>
             <Users size={48} color="#64748b" />
-            <span style={{ color: '#94a3b8', marginTop: '12px' }}>No patients found. Add one to get started!</span>
+            <span style={{ color: '#94a3b8', marginTop: '12px' }}>No patients found. Onboard one to get started!</span>
           </div>
         ) : (
           <div className="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Patient Name</th>
+                  <th>Patient Profile</th>
                   <th>Gender</th>
-                  <th>Date of Birth</th>
-                  <th>Email</th>
-                  <th>Phone No</th>
-                  <th>Address</th>
+                  <th>Age (DOB)</th>
+                  <th>Email Address</th>
+                  <th>Phone Number</th>
+                  <th>Residential Address</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -289,27 +311,64 @@ export const Dashboard = () => {
                     style={{ cursor: 'pointer' }}
                     onClick={() => navigate(`/patient/${p.patientId}`)}
                   >
-                    <td style={{ fontWeight: '600', color: '#fff' }}>
-                      {p.firstname} {p.lastname}
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: p.gender === 'Female' 
+                            ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.2))' 
+                            : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.2))',
+                          border: p.gender === 'Female' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(59, 130, 246, 0.2)',
+                          color: p.gender === 'Female' ? '#10b981' : '#3b82f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: '800',
+                          fontSize: '0.85rem'
+                        }}>
+                          {p.firstname ? p.firstname[0].toUpperCase() : 'P'}
+                          {p.lastname ? p.lastname[0].toUpperCase() : ''}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                          <span style={{ fontWeight: '700', color: '#fff', fontSize: '0.9rem' }}>{p.firstname} {p.lastname}</span>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b' }}>ID: {p.patientId.substring(0, 8)}...</span>
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <span className={`badge ${p.gender === 'Male' ? 'badge-info' : 'badge-success'}`}>
                         {p.gender}
                       </span>
                     </td>
-                    <td>{p.dob}</td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                        <span style={{ color: '#fff', fontWeight: '600' }}>{calculateAge(p.dob)}</span>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{p.dob}</span>
+                      </div>
+                    </td>
                     <td>{p.email}</td>
                     <td>{p.phoneno}</td>
                     <td>{p.address}</td>
                     <td style={{ textAlign: 'right' }}>
-                      <button
-                        className="btn btn-danger btn-small"
-                        onClick={(e) => handleDelete(p.patientId, e)}
-                        title="Delete Patient"
-                        style={{ padding: '6px' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="btn btn-secondary btn-small"
+                          onClick={() => navigate(`/patient/${p.patientId}`)}
+                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                        >
+                          View Twin
+                        </button>
+                        <button
+                          className="btn btn-danger btn-small"
+                          onClick={(e) => handleDelete(p.patientId, e)}
+                          title="Delete Patient"
+                          style={{ padding: '6px' }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -488,6 +547,33 @@ export const Dashboard = () => {
 };
 
 const styles = {
+  headerBlock: {
+    background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.03), rgba(59, 130, 246, 0.03))',
+    border: '1px solid rgba(255, 255, 255, 0.03)',
+    borderRadius: '16px',
+    padding: '24px 32px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    textAlign: 'left',
+  },
+  headerTextContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  mainTitle: {
+    fontSize: '1.75rem',
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: '-0.025em',
+    margin: 0,
+  },
+  mainSubtitle: {
+    fontSize: '0.88rem',
+    color: '#64748b',
+    margin: 0,
+  },
   dashboardContainer: {
     padding: '32px',
     maxWidth: '1280px',

@@ -87,6 +87,16 @@ export const Patient360 = () => {
     return () => stopVitalsStream(); // Cleanup streaming on unmount
   }, [id, user, navigate]);
 
+  useEffect(() => {
+    const handleTabSwitch = (e) => {
+      if (e.detail) {
+        handleTabChange(e.detail);
+      }
+    };
+    window.addEventListener('switch-patient-tab', handleTabSwitch);
+    return () => window.removeEventListener('switch-patient-tab', handleTabSwitch);
+  }, []);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -480,426 +490,458 @@ export const Patient360 = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header bar */}
-      <div style={styles.header}>
-        {user && !user.roles?.includes('PATIENT') && (
-          <button onClick={() => navigate('/')} style={styles.backBtn} className="btn btn-secondary btn-small">
-            <ArrowLeft size={16} />
-            Directory
-          </button>
-        )}
-        <div style={styles.titleInfo}>
-          <h1 style={styles.patientName}>
-            {patient.firstname} {patient.lastname}
-          </h1>
-          <span style={styles.patientIdBadge}>ID: {id}</span>
-        </div>
-      </div>
-
-      {/* Main Grid Layout */}
-      <div style={styles.mainGrid}>
-        
-        {/* Left Column: Demographics & Consent Manager */}
-        <div style={styles.leftCol}>
-          
-          {/* Demographic Card */}
-          <div className="glass-card" style={styles.demoCard}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={18} color="#0d9488" />
-                <h3 style={{ margin: 0 }}>Demographics</h3>
-              </div>
+      {/* 1. WIDE DEMOGRAPHICS & APPOINTMENTS PROFILE BANNER */}
+      <div className="glass-card" style={styles.profileBanner}>
+        <div style={styles.profileMain}>
+          <div style={styles.profileAvatar}>
+            {patient.firstname ? patient.firstname[0].toUpperCase() : 'P'}
+            {patient.lastname ? patient.lastname[0].toUpperCase() : ''}
+          </div>
+          <div style={styles.profileMeta}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h2 style={styles.profileName}>{patient.firstname} {patient.lastname}</h2>
               {user && !user.roles?.includes('PATIENT') && (
                 <button 
                   className="btn btn-secondary btn-small"
                   onClick={handleEditDemoClick}
+                  style={{ padding: '3px 8px', fontSize: '0.72rem' }}
                 >
-                  Edit
+                  Edit Profile
                 </button>
               )}
             </div>
-            <div style={styles.demoGrid}>
-              <div style={styles.demoItem}>
-                <span style={styles.demoLabel}>Gender</span>
-                <span style={styles.demoValue}>{patient.gender}</span>
-              </div>
-              <div style={styles.demoItem}>
-                <span style={styles.demoLabel}>Date of Birth</span>
-                <span style={styles.demoValue}>{patient.dob}</span>
-              </div>
-              <div style={styles.demoItem}>
-                <span style={styles.demoLabel}>Phone</span>
-                <span style={styles.demoValue}>{patient.phoneno}</span>
-              </div>
-              <div style={styles.demoItem}>
-                <span style={styles.demoLabel}>Email</span>
-                <span style={styles.demoValue}>{patient.email}</span>
-              </div>
-              <div style={{ ...styles.demoItem, gridColumn: 'span 2' }}>
-                <span style={styles.demoLabel}>Address</span>
-                <span style={styles.demoValue}>{patient.address}</span>
-              </div>
+            <span style={styles.profileId}>Patient ID: {patient.patientId}</span>
+            <div style={styles.profilePills}>
+              <span style={styles.profilePill}>{patient.gender}</span>
+              <span style={styles.profilePill}>{calculateAge(patient.dob)}</span>
+              <span style={styles.profilePill}>{patient.email}</span>
             </div>
           </div>
-
-          {/* HIPAA Consent Manager Card */}
-          <div className="glass-card" style={styles.consentCard}>
-            <div style={styles.sectionTitle}>
-              <Shield size={18} color="#f59e0b" />
-              <h3>HIPAA Consent Manager</h3>
-            </div>
-            
-            <div style={{ ...styles.consentStatusBox, background: hasConsent ? 'rgba(16, 185, 129, 0.06)' : 'rgba(244, 63, 94, 0.06)' }}>
-              <div style={styles.consentIcon}>
-                {hasConsent ? (
-                  <UserCheck size={28} color="#10b981" />
-                ) : (
-                  <ShieldAlert size={28} color="#f43f5e" />
-                )}
-              </div>
-              <div style={styles.consentText}>
-                <span style={styles.consentStatusTitle}>
-                  Consent: {hasConsent ? 'GRANTED' : 'REVOKED'}
-                </span>
-                <span style={styles.consentStatusDesc}>
-                  {hasConsent 
-                    ? 'Clinical digital twin construction and high-frequency wearable sensor sync are authorized.' 
-                    : 'Personal Health Information (PHI) is protected. Wearable sync and twin compilation are blocked.'}
-                </span>
-              </div>
-            </div>
-
-            {consentError && <div style={styles.consentErrBanner}>{consentError}</div>}
-            {consentSuccess && <div style={styles.consentSuccBanner}>{consentSuccess}</div>}
-
-            <div style={styles.consentActions}>
-              <button 
-                className="btn btn-success btn-small"
-                disabled={consentSaving || hasConsent}
-                onClick={() => handleConsentToggle('GRANTED')}
-              >
-                Grant Consent
-              </button>
-              <button 
-                className="btn btn-danger btn-small"
-                disabled={consentSaving || !hasConsent}
-                onClick={() => handleConsentToggle('REVOKED')}
-              >
-                Revoke Consent
-              </button>
-            </div>
-          </div>
-
         </div>
 
-        {/* Right Column: Dynamic Twin & Real-time Kafka Updates */}
-        <div style={styles.rightCol}>
+        {/* Appointment Status Info & HIPAA Manager */}
+        <div style={styles.profileAppointments}>
+          <div style={styles.appointmentBox}>
+            <span style={styles.appointmentLabel}>Last Checked</span>
+            <span style={styles.appointmentVal}>12 May 2026</span>
+          </div>
           
-          {/* Tab Navigation buttons */}
-          <div style={styles.tabsHeader}>
-            <button 
-              style={{ ...styles.tabBtn, ...(activeTab === 'twin' ? styles.activeTabBtn : {}) }}
-              onClick={() => handleTabChange('twin')}
-            >
-              Health Twin
-            </button>
-            <button 
-              style={{ ...styles.tabBtn, ...(activeTab === 'vitals' ? styles.activeTabBtn : {}) }}
-              onClick={() => handleTabChange('vitals')}
-            >
-              Live Wearable Stream
-            </button>
-            <button 
-              style={{ ...styles.tabBtn, ...(activeTab === 'audits' ? styles.activeTabBtn : {}) }}
-              onClick={() => handleTabChange('audits')}
-            >
-              HIPAA Audit Trail
-            </button>
-            <button 
-              style={{ ...styles.tabBtn, ...(activeTab === 'fhir' ? styles.activeTabBtn : {}) }}
-              onClick={() => handleTabChange('fhir')}
-            >
-              FHIR Resource
-            </button>
-            <button 
-              style={{ ...styles.tabBtn, ...(activeTab === 'ai' ? styles.activeTabBtn : {}) }}
-              onClick={() => handleTabChange('ai')}
-            >
-              AI Health Insights
-            </button>
+          <div style={styles.appointmentBox}>
+            <span style={styles.appointmentLabel}>Next Sync</span>
+            <span style={styles.appointmentVal}>20 July 2026</span>
           </div>
 
-          {/* Tab Contents */}
-          <div style={styles.tabContentContainer}>
-            
-            {/* 1. HEALTH TWIN TAB */}
-            {activeTab === 'twin' && (
-              <div style={styles.tabBody}>
-                {!hasConsent ? (
-                  <div style={styles.consentDeniedBanner}>
-                    <ShieldAlert size={48} color="#f43f5e" />
-                    <h4>Digital Twin Data Withheld</h4>
-                    <p>You cannot inspect the patient digital twin because HIPAA consent has been revoked.</p>
-                  </div>
-                ) : (
-                  <div style={styles.twinGrid}>
-                    {/* Health twin stats */}
-                    <div style={styles.twinStatsCard}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                        <h4 style={{ ...styles.twinCardTitle, margin: 0 }}>Health Twin Bio-Metrics</h4>
-                        {user && !user.roles?.includes('PATIENT') && (
-                          <button 
-                            className="btn btn-secondary btn-small"
-                            onClick={handleEditTwinClick}
-                          >
-                            Edit Bio-Metrics
-                          </button>
-                        )}
-                      </div>
-                      <div style={styles.bioMetricList}>
-                        <div style={styles.bioMetricItem}>
-                          <span style={styles.bioMetricLabel}>Blood Group</span>
-                          <span style={styles.bioMetricVal}>{healthTwin?.bloodgroup || 'O+'}</span>
-                        </div>
-                        <div style={styles.bioMetricItem}>
-                          <span style={styles.bioMetricLabel}>Height</span>
-                          <span style={styles.bioMetricVal}>{healthTwin?.height || '175'} cm</span>
-                        </div>
-                        <div style={styles.bioMetricItem}>
-                          <span style={styles.bioMetricLabel}>Weight</span>
-                          <span style={styles.bioMetricVal}>{healthTwin?.weight || '70'} kg</span>
-                        </div>
-                        <div style={styles.bioMetricItem}>
-                          <span style={styles.bioMetricLabel}>Body Temperature</span>
-                          <span style={styles.bioMetricVal}>{healthTwin?.temperature || '98.6'} °F</span>
-                        </div>
-                        <div style={styles.bioMetricItem}>
-                          <span style={styles.bioMetricLabel}>BMI</span>
-                          <span style={styles.bioMetricVal}>
-                            {healthTwin?.height && healthTwin?.weight 
-                              ? (healthTwin.weight / Math.pow(healthTwin.height / 100, 2)).toFixed(1)
-                              : '22.9'}
-                          </span>
-                        </div>
-                      </div>
+          <div style={styles.appointmentBox}>
+            <span style={styles.appointmentLabel}>HIPAA Security</span>
+            <span style={{ 
+              ...styles.consentBadge, 
+              background: hasConsent ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)',
+              color: hasConsent ? '#10b981' : '#f43f5e'
+            }}>
+              Consent: {hasConsent ? 'GRANTED' : 'REVOKED'}
+            </span>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+              <button 
+                className="btn btn-success btn-small" 
+                style={{ padding: '2px 6px', fontSize: '0.62rem' }}
+                onClick={() => handleConsentToggle('GRANTED')}
+                disabled={consentSaving || hasConsent}
+              >
+                Grant
+              </button>
+              <button 
+                className="btn btn-danger btn-small" 
+                style={{ padding: '2px 6px', fontSize: '0.62rem' }}
+                onClick={() => handleConsentToggle('REVOKED')}
+                disabled={consentSaving || !hasConsent}
+              >
+                Revoke
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                      <div style={styles.diseaseList}>
-                        <span style={styles.demoLabel}>Allergies / Chronic Conditions</span>
-                        <div style={styles.diseaseTagsContainer}>
-                          {healthTwin?.disease ? (
-                            healthTwin.disease.split(',').map((d, i) => (
-                              <span key={i} style={styles.diseaseTag}>{d.trim()}</span>
-                            ))
-                          ) : (
-                            <span style={styles.noDiseaseText}>No chronic conditions logged.</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+      {/* 2. TAB NAVIGATION BAR */}
+      <div style={styles.tabsHeader}>
+        <button 
+          style={{ ...styles.tabBtn, ...(activeTab === 'twin' ? styles.activeTabBtn : {}) }}
+          onClick={() => handleTabChange('twin')}
+        >
+          Health Twin Overview
+        </button>
+        <button 
+          style={{ ...styles.tabBtn, ...(activeTab === 'vitals' ? styles.activeTabBtn : {}) }}
+          onClick={() => handleTabChange('vitals')}
+        >
+          Real-time Monitoring
+        </button>
+        <button 
+          style={{ ...styles.tabBtn, ...(activeTab === 'ai' ? styles.activeTabBtn : {}) }}
+          onClick={() => handleTabChange('ai')}
+        >
+          AI Predictions
+        </button>
+        <button 
+          style={{ ...styles.tabBtn, ...(activeTab === 'audits' ? styles.activeTabBtn : {}) }}
+          onClick={() => handleTabChange('audits')}
+        >
+          HIPAA Audit Trail
+        </button>
+        <button 
+          style={{ ...styles.tabBtn, ...(activeTab === 'fhir' ? styles.activeTabBtn : {}) }}
+          onClick={() => handleTabChange('fhir')}
+        >
+          FHIR Resource
+        </button>
+      </div>
 
-                    {/* interactive mock 3D human frame */}
-                    <div style={styles.twinVisualCard}>
-                      <h4 style={styles.twinCardTitle}>3D Digital Twin Visualizer</h4>
-                      <div style={styles.twinVisualContainer}>
-                        <div style={styles.twinBodyFrame}>
-                          {/* Volumetric Holographic 3D model */}
-                          <svg viewBox="0 0 100 220" style={styles.humanSvg}>
-                            <style>{`
-                              @keyframes pulse-node-glow {
-                                0% { r: 3px; opacity: 0.3; stroke-width: 1px; }
-                                50% { r: 7px; opacity: 0.95; stroke-width: 2px; }
-                                100% { r: 3px; opacity: 0.3; stroke-width: 1px; }
-                              }
-                              @keyframes scan-line-sweep {
-                                0% { y1: 15; y2: 15; opacity: 0.2; }
-                                50% { y1: 205; y2: 205; opacity: 0.9; }
-                                100% { y1: 15; y2: 15; opacity: 0.2; }
-                              }
-                              .pulsing-node {
-                                animation: pulse-node-glow 2s infinite ease-in-out;
-                              }
-                              .scanner-line {
-                                animation: scan-line-sweep 4s infinite ease-in-out;
-                              }
-                            `}</style>
-                            {/* Volumetric Human Body Silhouette Path */}
-                            <path 
-                              d="M 50,15 C 44,15 42,20 42,26 C 42,32 46,36 50,36 C 54,36 58,32 58,26 C 58,20 56,15 50,15 Z M 47,36 L 53,36 M 47,36 C 43,36 38,40 36,44 L 27,78 C 25,85 20,105 20,110 C 20,112 22,113 24,111 L 30,82 L 38,64 L 40,100 L 39,125 L 41,168 L 43,210 C 44,212 48,212 49,210 L 47,168 L 50,130 L 53,168 L 51,210 C 52,212 56,212 57,210 L 59,168 L 61,125 L 60,100 L 62,64 L 70,82 L 76,111 C 78,113 80,112 80,110 C 80,105 75,85 73,78 L 64,44 C 62,40 57,36 53,36" 
-                              fill="rgba(34, 211, 238, 0.05)" 
-                              stroke="rgba(34, 211, 238, 0.3)" 
-                              strokeWidth="1.2" 
-                            />
-
-                            {/* Volumetric 3D Grid Lines */}
-                            <line x1="10" y1="110" x2="90" y2="110" stroke="rgba(13, 148, 136, 0.15)" strokeWidth="0.5" strokeDasharray="2,2" />
-                            <line x1="50" y1="10" x2="50" y2="210" stroke="rgba(13, 148, 136, 0.15)" strokeWidth="0.5" strokeDasharray="2,2" />
-
-                            {/* Head interior volumetric rings */}
-                            <ellipse cx="50" cy="22" rx="6" ry="2.5" fill="none" stroke="rgba(6, 182, 212, 0.3)" strokeWidth="0.6" />
-                            <ellipse cx="50" cy="26" rx="7.5" ry="3" fill="none" stroke="rgba(6, 182, 212, 0.4)" strokeWidth="0.6" />
-                            <ellipse cx="50" cy="30" rx="6.5" ry="2.5" fill="none" stroke="rgba(6, 182, 212, 0.3)" strokeWidth="0.6" />
-
-                            {/* Torso/Chest internal 3D stack rings */}
-                            <ellipse cx="50" cy="54" rx="13" ry="4" fill="none" stroke="rgba(6, 182, 212, 0.2)" strokeWidth="0.6" />
-                            <ellipse cx="50" cy="66" rx="16" ry="5" fill="none" stroke="rgba(6, 182, 212, 0.3)" strokeWidth="0.6" />
-                            <ellipse cx="50" cy="78" rx="18" ry="5.5" fill="none" stroke="rgba(6, 182, 212, 0.4)" strokeWidth="0.7" />
-                            <ellipse cx="50" cy="90" rx="17" ry="5" fill="none" stroke="rgba(6, 182, 212, 0.3)" strokeWidth="0.6" />
-                            <ellipse cx="50" cy="102" rx="15" ry="4.5" fill="none" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.6" />
-                            <ellipse cx="50" cy="114" rx="14" ry="4.2" fill="none" stroke="rgba(6, 182, 212, 0.2)" strokeWidth="0.6" />
-                            <ellipse cx="50" cy="126" rx="13" ry="4" fill="none" stroke="rgba(6, 182, 212, 0.15)" strokeWidth="0.6" />
-
-                            {/* Spine Line */}
-                            <line x1="50" y1="36" x2="50" y2="130" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="1" strokeDasharray="3,3" />
-
-                            {/* Arm centerlines */}
-                            <line x1="33" y1="50" x2="23" y2="94" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.8" strokeDasharray="2,2" />
-                            <line x1="67" y1="50" x2="77" y2="94" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.8" strokeDasharray="2,2" />
-
-                            {/* Leg centerlines */}
-                            <line x1="42" y1="130" x2="45" y2="200" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.8" strokeDasharray="2,2" />
-                            <line x1="58" y1="130" x2="55" y2="200" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.8" strokeDasharray="2,2" />
-
-                            {/* Holographic scanner sweep */}
-                            <line x1="5" y1="0" x2="95" y2="0" stroke="rgba(34, 211, 238, 0.6)" strokeWidth="1.5" className="scanner-line" style={{ filter: 'drop-shadow(0 0 4px #22d3ee)' }} />
-
-                            {/* Dynamic indicator nodes with leader lines pointing to text inside SVG */}
-                            {/* Cerebral Node */}
-                            <g>
-                              <circle 
-                                cx="50" 
-                                cy="26" 
-                                r="4" 
-                                fill={hasBrainRisk ? "rgba(236, 72, 153, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
-                                stroke={hasBrainRisk ? "#ec4899" : "#10b981"} 
-                                className={hasBrainRisk ? "pulsing-node" : ""} 
-                              />
-                              <circle cx="50" cy="26" r="2" fill={hasBrainRisk ? "#ec4899" : "#10b981"} />
-                              {hasBrainRisk && (
-                                <>
-                                  <line x1="50" y1="26" x2="80" y2="18" stroke="#ec4899" strokeWidth="0.8" strokeDasharray="2,2" />
-                                  <text x="82" y="20" fill="#ec4899" fontSize="6.5" fontWeight="700" letterSpacing="0.05em">CEREBRAL</text>
-                                </>
-                              )}
-                            </g>
-
-                            {/* Pulmonary Node */}
-                            <g>
-                              <circle 
-                                cx="50" 
-                                cy="60" 
-                                r="4" 
-                                fill={hasRespiratoryRisk ? "rgba(59, 130, 246, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
-                                stroke={hasRespiratoryRisk ? "#3b82f6" : "#10b981"} 
-                                className={hasRespiratoryRisk ? "pulsing-node" : ""} 
-                              />
-                              <circle cx="50" cy="60" r="2" fill={hasRespiratoryRisk ? "#3b82f6" : "#10b981"} />
-                              {hasRespiratoryRisk && (
-                                <>
-                                  <line x1="50" y1="60" x2="82" y2="54" stroke="#3b82f6" strokeWidth="0.8" strokeDasharray="2,2" />
-                                  <text x="84" y="56" fill="#3b82f6" fontSize="6.5" fontWeight="700" letterSpacing="0.05em">PULMONARY</text>
-                                </>
-                              )}
-                            </g>
-
-                            {/* Cardiac Node */}
-                            <g>
-                              <circle 
-                                cx="45" 
-                                cy="74" 
-                                r="4" 
-                                fill={hasHeartRisk ? "rgba(244, 63, 94, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
-                                stroke={hasHeartRisk ? "#f43f5e" : "#10b981"} 
-                                className={hasHeartRisk ? "pulsing-node" : ""} 
-                              />
-                              <circle cx="45" cy="74" r="2" fill={hasHeartRisk ? "#f43f5e" : "#10b981"} />
-                              {hasHeartRisk && (
-                                <>
-                                  <line x1="45" y1="74" x2="12" y2="82" stroke="#f43f5e" strokeWidth="0.8" strokeDasharray="2,2" />
-                                  <text x="10" y="81" fill="#f43f5e" fontSize="6.5" fontWeight="700" letterSpacing="0.05em" textAnchor="end">CARDIAC</text>
-                                </>
-                              )}
-                            </g>
-
-                            {/* Pancreatic Node */}
-                            <g>
-                              <circle 
-                                cx="50" 
-                                cy="98" 
-                                r="4" 
-                                fill={hasDiabetesRisk ? "rgba(251, 191, 36, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
-                                stroke={hasDiabetesRisk ? "#fbbf24" : "#10b981"} 
-                                className={hasDiabetesRisk ? "pulsing-node" : ""} 
-                              />
-                              <circle cx="50" cy="98" r="2" fill={hasDiabetesRisk ? "#fbbf24" : "#10b981"} />
-                              {hasDiabetesRisk && (
-                                <>
-                                  <line x1="50" y1="98" x2="82" y2="98" stroke="#fbbf24" strokeWidth="0.8" strokeDasharray="2,2" />
-                                  <text x="84" y="100" fill="#fbbf24" fontSize="6.5" fontWeight="700" letterSpacing="0.05em">PANCREATIC</text>
-                                </>
-                              )}
-                            </g>
-
-                            {/* Renal Node */}
-                            <g>
-                              <circle 
-                                cx="50" 
-                                cy="116" 
-                                r="4" 
-                                fill={hasKidneyRisk ? "rgba(168, 85, 247, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
-                                stroke={hasKidneyRisk ? "#a855f7" : "#10b981"} 
-                                className={hasKidneyRisk ? "pulsing-node" : ""} 
-                              />
-                              <circle cx="50" cy="116" r="2" fill={hasKidneyRisk ? "#a855f7" : "#10b981"} />
-                              {hasKidneyRisk && (
-                                <>
-                                  <line x1="50" y1="116" x2="12" y2="122" stroke="#a855f7" strokeWidth="0.8" strokeDasharray="2,2" />
-                                  <text x="10" y="121" fill="#a855f7" fontSize="6.5" fontWeight="700" letterSpacing="0.05em" textAnchor="end">RENAL</text>
-                                </>
-                              )}
-                            </g>
-                          </svg>
-                        </div>
-
-                        {/* Diagnostics HUD Readings */}
-                        <div style={styles.hudPanel}>
-                          <div style={styles.hudHeader}>SYSTEM DIAGNOSTICS</div>
-                          <div style={styles.hudRow}>
-                            <span style={styles.hudSystem}>Nervous System</span>
-                            <span style={hasBrainRisk ? styles.hudAlert : styles.hudNormal}>
-                              {hasBrainRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
-                            </span>
-                          </div>
-                          <div style={styles.hudRow}>
-                            <span style={styles.hudSystem}>Cardiovascular</span>
-                            <span style={hasHeartRisk ? styles.hudAlert : styles.hudNormal}>
-                              {hasHeartRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
-                            </span>
-                          </div>
-                          <div style={styles.hudRow}>
-                            <span style={styles.hudSystem}>Respiratory</span>
-                            <span style={hasRespiratoryRisk ? styles.hudAlert : styles.hudNormal}>
-                              {hasRespiratoryRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
-                            </span>
-                          </div>
-                          <div style={styles.hudRow}>
-                            <span style={styles.hudSystem}>Endocrine System</span>
-                            <span style={hasDiabetesRisk ? styles.hudAlert : styles.hudNormal}>
-                              {hasDiabetesRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
-                            </span>
-                          </div>
-                          <div style={styles.hudRow}>
-                            <span style={styles.hudSystem}>Renal/Urinary</span>
-                            <span style={hasKidneyRisk ? styles.hudAlert : styles.hudNormal}>
-                              {hasKidneyRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+      {/* 3. MAIN WORKSPACE CONTENT WINDOW */}
+      <div style={styles.tabContentContainer}>
+        
+        {/* 1. HEALTH TWIN TAB */}
+        {activeTab === 'twin' && (
+          <div style={styles.tabBody}>
+            {!hasConsent ? (
+              <div style={styles.consentDeniedBanner}>
+                <ShieldAlert size={48} color="#f43f5e" />
+                <h4>Digital Twin PHI Withheld</h4>
+                <p>You cannot inspect the patient digital twin or vitals because HIPAA consent has been revoked.</p>
               </div>
-            )}
+            ) : (
+              <div style={styles.twinGrid}>
+                {/* 1. Interactive mock 3D human frame */}
+                <div style={styles.twinVisualCard}>
+                  <h4 style={styles.twinCardTitle}>3D Digital Twin Visualizer</h4>
+                  <div style={styles.twinVisualContainer}>
+                    <div style={styles.twinBodyFrame}>
+                      {/* Volumetric Holographic 3D model */}
+                      <svg viewBox="0 0 100 220" style={styles.humanSvg}>
+                        <style>{`
+                          @keyframes pulse-node-glow {
+                            0% { r: 3px; opacity: 0.3; stroke-width: 1px; }
+                            50% { r: 7px; opacity: 0.95; stroke-width: 2px; }
+                            100% { r: 3px; opacity: 0.3; stroke-width: 1px; }
+                          }
+                          @keyframes scan-line-sweep {
+                            0% { y1: 15; y2: 15; opacity: 0.2; }
+                            50% { y1: 205; y2: 205; opacity: 0.9; }
+                            100% { y1: 15; y2: 15; opacity: 0.2; }
+                          }
+                          .pulsing-node {
+                            animation: pulse-node-glow 2s infinite ease-in-out;
+                          }
+                          .scanner-line {
+                            animation: scan-line-sweep 4s infinite ease-in-out;
+                          }
+                        `}</style>
+                        {/* Volumetric Human Body Silhouette Path */}
+                        <path 
+                          d="M 50,15 C 44,15 42,20 42,26 C 42,32 46,36 50,36 C 54,36 58,32 58,26 C 58,20 56,15 50,15 Z M 47,36 L 53,36 M 47,36 C 43,36 38,40 36,44 L 27,78 C 25,85 20,105 20,110 C 20,112 22,113 24,111 L 30,82 L 38,64 L 40,100 L 39,125 L 41,168 L 43,210 C 44,212 48,212 49,210 L 47,168 L 50,130 L 53,168 L 51,210 C 52,212 56,212 57,210 L 59,168 L 61,125 L 60,100 L 62,64 L 70,82 L 76,111 C 78,113 80,112 80,110 C 80,105 75,85 73,78 L 64,44 C 62,40 57,36 53,36" 
+                          fill="rgba(34, 211, 238, 0.05)" 
+                          stroke="rgba(34, 211, 238, 0.3)" 
+                          strokeWidth="1.2" 
+                        />
+
+                        {/* Volumetric 3D Grid Lines */}
+                        <line x1="10" y1="110" x2="90" y2="110" stroke="rgba(13, 148, 136, 0.15)" strokeWidth="0.5" strokeDasharray="2,2" />
+                        <line x1="50" y1="10" x2="50" y2="210" stroke="rgba(13, 148, 136, 0.15)" strokeWidth="0.5" strokeDasharray="2,2" />
+
+                        {/* Head interior volumetric rings */}
+                        <ellipse cx="50" cy="22" rx="6" ry="2.5" fill="none" stroke="rgba(6, 182, 212, 0.3)" strokeWidth="0.6" />
+                        <ellipse cx="50" cy="26" rx="7.5" ry="3" fill="none" stroke="rgba(6, 182, 212, 0.4)" strokeWidth="0.6" />
+                        <ellipse cx="50" cy="30" rx="6.5" ry="2.5" fill="none" stroke="rgba(6, 182, 212, 0.3)" strokeWidth="0.6" />
+
+                        {/* Torso/Chest internal 3D stack rings */}
+                        <ellipse cx="50" cy="54" rx="13" ry="4" fill="none" stroke="rgba(6, 182, 212, 0.2)" strokeWidth="0.6" />
+                        <ellipse cx="50" cy="66" rx="16" ry="5" fill="none" stroke="rgba(6, 182, 212, 0.3)" strokeWidth="0.6" />
+                        <ellipse cx="50" cy="78" rx="18" ry="5.5" fill="none" stroke="rgba(6, 182, 212, 0.4)" strokeWidth="0.7" />
+                        <ellipse cx="50" cy="90" rx="17" ry="5" fill="none" stroke="rgba(6, 182, 212, 0.3)" strokeWidth="0.6" />
+                        <ellipse cx="50" cy="102" rx="15" ry="4.5" fill="none" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.6" />
+                        <ellipse cx="50" cy="114" rx="14" ry="4.2" fill="none" stroke="rgba(6, 182, 212, 0.2)" strokeWidth="0.6" />
+                        <ellipse cx="50" cy="126" rx="13" ry="4" fill="none" stroke="rgba(6, 182, 212, 0.15)" strokeWidth="0.6" />
+
+                        {/* Spine Line */}
+                        <line x1="50" y1="36" x2="50" y2="130" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="1" strokeDasharray="3,3" />
+
+                        {/* Arm centerlines */}
+                        <line x1="33" y1="50" x2="23" y2="94" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.8" strokeDasharray="2,2" />
+                        <line x1="67" y1="50" x2="77" y2="94" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.8" strokeDasharray="2,2" />
+
+                        {/* Leg centerlines */}
+                        <line x1="42" y1="130" x2="45" y2="200" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.8" strokeDasharray="2,2" />
+                        <line x1="58" y1="130" x2="55" y2="200" stroke="rgba(6, 182, 212, 0.25)" strokeWidth="0.8" strokeDasharray="2,2" />
+
+                        {/* Holographic scanner sweep */}
+                        <line x1="5" y1="0" x2="95" y2="0" stroke="rgba(34, 211, 238, 0.6)" strokeWidth="1.5" className="scanner-line" style={{ filter: 'drop-shadow(0 0 4px #22d3ee)' }} />
+
+                        {/* Dynamic indicator nodes with leader lines pointing to text inside SVG */}
+                        {/* Cerebral Node */}
+                        <g>
+                          <circle 
+                            cx="50" 
+                            cy="26" 
+                            r="4" 
+                            fill={hasBrainRisk ? "rgba(236, 72, 153, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
+                            stroke={hasBrainRisk ? "#ec4899" : "#10b981"} 
+                            className={hasBrainRisk ? "pulsing-node" : ""} 
+                          />
+                          <circle cx="50" cy="26" r="2" fill={hasBrainRisk ? "#ec4899" : "#10b981"} />
+                          {hasBrainRisk && (
+                            <>
+                              <line x1="50" y1="26" x2="80" y2="18" stroke="#ec4899" strokeWidth="0.8" strokeDasharray="2,2" />
+                              <text x="82" y="20" fill="#ec4899" fontSize="6.5" fontWeight="700" letterSpacing="0.05em">CEREBRAL</text>
+                            </>
+                          )}
+                        </g>
+
+                        {/* Pulmonary Node */}
+                        <g>
+                          <circle 
+                            cx="50" 
+                            cy="60" 
+                            r="4" 
+                            fill={hasRespiratoryRisk ? "rgba(59, 130, 246, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
+                            stroke={hasRespiratoryRisk ? "#3b82f6" : "#10b981"} 
+                            className={hasRespiratoryRisk ? "pulsing-node" : ""} 
+                          />
+                          <circle cx="50" cy="60" r="2" fill={hasRespiratoryRisk ? "#3b82f6" : "#10b981"} />
+                          {hasRespiratoryRisk && (
+                            <>
+                              <line x1="50" y1="60" x2="82" y2="54" stroke="#3b82f6" strokeWidth="0.8" strokeDasharray="2,2" />
+                              <text x="84" y="56" fill="#3b82f6" fontSize="6.5" fontWeight="700" letterSpacing="0.05em">PULMONARY</text>
+                            </>
+                          )}
+                        </g>
+
+                        {/* Cardiac Node */}
+                        <g>
+                          <circle 
+                            cx="45" 
+                            cy="74" 
+                            r="4" 
+                            fill={hasHeartRisk ? "rgba(244, 63, 94, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
+                            stroke={hasHeartRisk ? "#f43f5e" : "#10b981"} 
+                            className={hasHeartRisk ? "pulsing-node" : ""} 
+                          />
+                          <circle cx="45" cy="74" r="2" fill={hasHeartRisk ? "#f43f5e" : "#10b981"} />
+                          {hasHeartRisk && (
+                            <>
+                              <line x1="45" y1="74" x2="12" y2="82" stroke="#f43f5e" strokeWidth="0.8" strokeDasharray="2,2" />
+                              <text x="10" y="81" fill="#f43f5e" fontSize="6.5" fontWeight="700" letterSpacing="0.05em" textAnchor="end">CARDIAC</text>
+                            </>
+                          )}
+                        </g>
+
+                        {/* Pancreatic Node */}
+                        <g>
+                          <circle 
+                            cx="50" 
+                            cy="98" 
+                            r="4" 
+                            fill={hasDiabetesRisk ? "rgba(251, 191, 36, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
+                            stroke={hasDiabetesRisk ? "#fbbf24" : "#10b981"} 
+                            className={hasDiabetesRisk ? "pulsing-node" : ""} 
+                          />
+                          <circle cx="50" cy="98" r="2" fill={hasDiabetesRisk ? "#fbbf24" : "#10b981"} />
+                          {hasDiabetesRisk && (
+                            <>
+                              <line x1="50" y1="98" x2="82" y2="98" stroke="#fbbf24" strokeWidth="0.8" strokeDasharray="2,2" />
+                              <text x="84" y="100" fill="#fbbf24" fontSize="6.5" fontWeight="700" letterSpacing="0.05em">PANCREATIC</text>
+                            </>
+                          )}
+                        </g>
+
+                        {/* Renal Node */}
+                        <g>
+                          <circle 
+                            cx="50" 
+                            cy="116" 
+                            r="4" 
+                            fill={hasKidneyRisk ? "rgba(168, 85, 247, 0.2)" : "rgba(16, 185, 129, 0.15)"} 
+                            stroke={hasKidneyRisk ? "#a855f7" : "#10b981"} 
+                            className={hasKidneyRisk ? "pulsing-node" : ""} 
+                          />
+                          <circle cx="50" cy="116" r="2" fill={hasKidneyRisk ? "#a855f7" : "#10b981"} />
+                          {hasKidneyRisk && (
+                            <>
+                              <line x1="50" y1="116" x2="12" y2="122" stroke="#a855f7" strokeWidth="0.8" strokeDasharray="2,2" />
+                              <text x="10" y="121" fill="#a855f7" fontSize="6.5" fontWeight="700" letterSpacing="0.05em" textAnchor="end">RENAL</text>
+                            </>
+                          )}
+                        </g>
+                      </svg>
+                    </div>
+
+                    {/* Diagnostics HUD Readings */}
+                    <div style={styles.hudPanel}>
+                      <div style={styles.hudHeader}>SYSTEM DIAGNOSTICS</div>
+                      <div style={styles.hudRow}>
+                        <span style={styles.hudSystem}>Nervous System</span>
+                        <span style={hasBrainRisk ? styles.hudAlert : styles.hudNormal}>
+                          {hasBrainRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
+                        </span>
+                      </div>
+                      <div style={styles.hudRow}>
+                        <span style={styles.hudSystem}>Cardiovascular</span>
+                        <span style={hasHeartRisk ? styles.hudAlert : styles.hudNormal}>
+                          {hasHeartRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
+                        </span>
+                      </div>
+                      <div style={styles.hudRow}>
+                        <span style={styles.hudSystem}>Respiratory</span>
+                        <span style={hasRespiratoryRisk ? styles.hudAlert : styles.hudNormal}>
+                          {hasRespiratoryRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
+                        </span>
+                      </div>
+                      <div style={styles.hudRow}>
+                        <span style={styles.hudSystem}>Endocrine System</span>
+                        <span style={hasDiabetesRisk ? styles.hudAlert : styles.hudNormal}>
+                          {hasDiabetesRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
+                        </span>
+                      </div>
+                      <div style={styles.hudRow}>
+                        <span style={styles.hudSystem}>Renal/Urinary</span>
+                        <span style={hasKidneyRisk ? styles.hudAlert : styles.hudNormal}>
+                          {hasKidneyRisk ? 'CRITICAL ALERT' : 'FUNCTIONAL'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Health twin stats */}
+                <div style={styles.twinStatsCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                    <h4 style={{ ...styles.twinCardTitle, margin: 0 }}>Key Vitals (Latest)</h4>
+                    {user && !user.roles?.includes('PATIENT') && (
+                      <button 
+                        className="btn btn-secondary btn-small"
+                        onClick={handleEditTwinClick}
+                      >
+                        Edit Metrics
+                      </button>
+                    )}
+                  </div>
+                  <div style={styles.bioMetricList}>
+                    <div style={styles.bioMetricItem}>
+                      <span style={styles.bioMetricLabel}>Heart Rate</span>
+                      <span style={styles.bioMetricVal}>{vitals?.heartrate || '72'} bpm</span>
+                    </div>
+                    <div style={styles.bioMetricItem}>
+                      <span style={styles.bioMetricLabel}>Blood Pressure</span>
+                      <span style={styles.bioMetricVal}>{vitals?.systolic || '120'}/{vitals?.diastolic || '80'} mmHg</span>
+                    </div>
+                    <div style={styles.bioMetricItem}>
+                      <span style={styles.bioMetricLabel}>SpO2 Level</span>
+                      <span style={styles.bioMetricVal}>{vitals?.spo2 || '98'} %</span>
+                    </div>
+                    <div style={styles.bioMetricItem}>
+                      <span style={styles.bioMetricLabel}>Blood Sugar (HbA1c)</span>
+                      <span style={styles.bioMetricVal}>{vitals?.bloodsugar || '5.7'} %</span>
+                    </div>
+                    <div style={styles.bioMetricItem}>
+                      <span style={styles.bioMetricLabel}>Body Temperature</span>
+                      <span style={styles.bioMetricVal}>{healthTwin?.temperature || '98.6'} °F</span>
+                    </div>
+                    <div style={styles.bioMetricItem}>
+                      <span style={styles.bioMetricLabel}>Height / Weight</span>
+                      <span style={styles.bioMetricVal}>{healthTwin?.height || '175'}cm / {healthTwin?.weight || '70'}kg</span>
+                    </div>
+                    <div style={styles.bioMetricItem}>
+                      <span style={styles.bioMetricLabel}>Calculated BMI</span>
+                      <span style={styles.bioMetricVal}>
+                        {healthTwin?.height && healthTwin?.weight 
+                          ? (healthTwin.weight / Math.pow(healthTwin.height / 100, 2)).toFixed(1)
+                          : '22.9'} kg/m²
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={styles.diseaseList}>
+                    <span style={styles.demoLabel}>Allergies & Diagnoses</span>
+                    <div style={styles.diseaseTagsContainer}>
+                      {healthTwin?.disease ? (
+                        healthTwin.disease.split(',').map((d, i) => (
+                          <span key={i} style={styles.diseaseTag}>{d.trim()}</span>
+                        ))
+                      ) : (
+                        <span style={styles.noDiseaseText}>No chronic conditions logged.</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Health Summary & Score Panel */}
+                <div style={styles.twinSummaryCard} className="glass-card">
+                  <h4 style={styles.twinCardTitle}>Health Score HUD</h4>
+                  
+                  {/* Health Score Circular SVG */}
+                  <div style={styles.scoreGaugeContainer}>
+                    <svg viewBox="0 0 100 100" style={styles.scoreCircle}>
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="8"/>
+                      <circle 
+                        cx="50" 
+                        cy="50" 
+                        r="40" 
+                        fill="none" 
+                        stroke="url(#scoreGrad)" 
+                        strokeWidth="8" 
+                        strokeDasharray="251.2" 
+                        strokeDashoffset={251.2 - (251.2 * 78) / 100} 
+                        strokeLinecap="round" 
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '50px 50px', transition: 'stroke-dashoffset 1s ease' }}
+                      />
+                      <defs>
+                        <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#0d9488" />
+                          <stop offset="100%" stopColor="#3b82f6" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div style={styles.scoreValueContainer}>
+                      <span style={styles.scoreValue}>78</span>
+                      <span style={styles.scoreLabel}>Health Score</span>
+                    </div>
+                  </div>
+
+                  {/* Summary Risks */}
+                  <div style={styles.summaryInfoBox}>
+                    <div style={styles.summaryInfoRow}>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Risk Level</span>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#fbbf24' }}>MODERATE</span>
+                    </div>
+                    <div style={styles.summaryInfoRow}>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>CVD Risk (10 Yr)</span>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#f43f5e' }}>24.3%</span>
+                    </div>
+                  </div>
+
+                  {/* Mini Grid Metrics */}
+                  <div style={styles.summaryStatsGrid}>
+                    <div style={styles.summaryMiniCard}>
+                      <span style={styles.summaryMiniVal}>2,457</span>
+                      <span style={styles.summaryMiniLabel}>FHIR Records</span>
+                    </div>
+                    <div style={styles.summaryMiniCard}>
+                      <span style={styles.summaryMiniVal}>18</span>
+                      <span style={styles.summaryMiniLabel}>Documents</span>
+                    </div>
+                    <div style={styles.summaryMiniCard}>
+                      <span style={styles.summaryMiniVal}>2</span>
+                      <span style={styles.summaryMiniLabel}>Allergies</span>
+                    </div>
+                    <div style={styles.summaryMiniCard}>
+                      <span style={styles.summaryMiniVal}>3</span>
+                      <span style={styles.summaryMiniLabel}>Diagnoses</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        </div>
+      )}
 
             {/* 2. LIVE VITALS / KAFKA STREAM TAB */}
             {activeTab === 'vitals' && (
@@ -1350,10 +1392,6 @@ export const Patient360 = () => {
               </div>
             )}
           </div>
-
-        </div>
-
-      </div>
       
       {/* Edit Health Twin Modal */}
       {showTwinModal && (
@@ -1547,54 +1585,101 @@ export const Patient360 = () => {
 const styles = {
   container: {
     padding: '32px',
-    maxWidth: '1280px',
+    maxWidth: '1360px',
     margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
   },
-  header: {
+  profileBanner: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    padding: '24px 32px',
+    gap: '24px',
+    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(30, 41, 59, 0.4))',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    borderRadius: '16px',
+    textAlign: 'left',
+  },
+  profileMain: {
     display: 'flex',
     alignItems: 'center',
     gap: '20px',
   },
-  backBtn: {
+  profileAvatar: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #0d9488, #3b82f6)',
+    color: '#fff',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    justifyContent: 'center',
+    fontWeight: '800',
+    fontSize: '1.5rem',
+    border: '2px solid rgba(255, 255, 255, 0.1)',
   },
-  titleInfo: {
+  profileMeta: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'flex-start',
+    gap: '4px',
   },
-  patientName: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
+  profileName: {
+    fontSize: '1.5rem',
+    fontWeight: '800',
     color: '#fff',
     letterSpacing: '-0.02em',
+    margin: 0,
   },
-  patientIdBadge: {
+  profileId: {
     fontSize: '0.8rem',
     color: '#64748b',
-    marginTop: '2px',
     fontFamily: 'monospace',
   },
-  mainGrid: {
-    display: 'grid',
-    gridTemplateColumns: '380px 1fr',
-    gap: '24px',
-    alignItems: 'start',
+  profilePills: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '6px',
+    flexWrap: 'wrap',
   },
-  leftCol: {
+  profilePill: {
+    fontSize: '0.72rem',
+    background: 'rgba(255, 255, 255, 0.04)',
+    color: '#94a3b8',
+    padding: '3px 8px',
+    borderRadius: '6px',
+    fontWeight: '600',
+  },
+  profileAppointments: {
+    display: 'flex',
+    gap: '24px',
+    flexWrap: 'wrap',
+  },
+  appointmentBox: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '24px',
+    gap: '4px',
   },
-  rightCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
+  appointmentLabel: {
+    fontSize: '0.68rem',
+    color: '#64748b',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  },
+  appointmentVal: {
+    fontSize: '0.9rem',
+    fontWeight: '700',
+    color: '#fff',
+  },
+  consentBadge: {
+    fontSize: '0.75rem',
+    fontWeight: 'bold',
+    padding: '3px 8px',
+    borderRadius: '6px',
+    display: 'inline-block',
   },
   sectionTitle: {
     display: 'flex',
@@ -2093,5 +2178,89 @@ const styles = {
     color: '#f43f5e',
     fontSize: '0.88rem',
     marginBottom: '16px',
+  },
+  twinSummaryCard: {
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '16px',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+    textAlign: 'left',
+  },
+  scoreGaugeContainer: {
+    position: 'relative',
+    width: '120px',
+    height: '120px',
+    margin: '0 auto',
+  },
+  scoreCircle: {
+    width: '100%',
+    height: '100%',
+  },
+  scoreValueContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreValue: {
+    fontSize: '1.6rem',
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: '1',
+  },
+  scoreLabel: {
+    fontSize: '0.62rem',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    fontWeight: 'bold',
+    marginTop: '2px',
+  },
+  summaryInfoBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    background: 'rgba(15, 23, 42, 0.4)',
+    border: '1px solid rgba(255, 255, 255, 0.02)',
+    padding: '12px',
+    borderRadius: '10px',
+  },
+  summaryInfoRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryStatsGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '8px',
+  },
+  summaryMiniCard: {
+    background: 'rgba(15, 23, 42, 0.3)',
+    border: '1px solid rgba(255, 255, 255, 0.01)',
+    borderRadius: '8px',
+    padding: '8px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  summaryMiniVal: {
+    fontSize: '0.9rem',
+    fontWeight: '800',
+    color: '#fff',
+  },
+  summaryMiniLabel: {
+    fontSize: '0.6rem',
+    color: '#64748b',
+    fontWeight: '600',
+    marginTop: '2px',
+    textAlign: 'center',
   }
 };
