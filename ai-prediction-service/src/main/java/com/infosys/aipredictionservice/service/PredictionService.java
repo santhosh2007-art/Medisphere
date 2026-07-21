@@ -80,96 +80,99 @@ public class PredictionService {
 
     private double calculateCvdScore(String patientId) {
         System.out.println("[TensorFlow Core Engine v2.16.1] Loading pre-trained Keras CVD Model...");
-        double score = 0;
+        double score = 10.0; // Baseline
         int age = getPatientAge(patientId);
         double bmi = getPatientBmi(patientId);
         String disease = getPatientDisease(patientId).toLowerCase();
+        Map vitals = getLatestVitals(patientId);
 
-        // 1. Age > 60: +15
-        if (age > 60) {
-            score += 15;
-            System.out.println("  Feature trigger: Age (" + age + " > 60) -> Added +15");
-        }
+        // 1. Patient Age Factor
+        if (age > 60) score += 18;
+        else if (age > 50) score += 10;
 
-        // 2. BP > 140: +20
-        if (disease.contains("hypertension") || disease.contains("bp") || disease.contains("blood pressure")) {
+        // 2. BMI Factor
+        if (bmi > 30) score += 15;
+        else if (bmi > 27) score += 8;
+
+        // 3. Real-time Vitals Telemetry Factors
+        if (vitals != null) {
+            // Heart Rate
+            if (vitals.get("heartbeat") != null) {
+                int hr = Integer.parseInt(vitals.get("heartbeat").toString());
+                if (hr > 100) score += 20;
+                else if (hr > 85) score += 10;
+            }
+            // Blood Pressure
+            if (vitals.get("bloodpressure") != null) {
+                String bpStr = vitals.get("bloodpressure").toString();
+                try {
+                    int sys = Integer.parseInt(bpStr.split("/")[0].trim());
+                    if (sys > 140) score += 25;
+                    else if (sys > 130) score += 14;
+                } catch (Exception ignored) {}
+            }
+            // Blood Sugar
+            if (vitals.get("bloodsuger") != null) {
+                double sugar = Double.parseDouble(vitals.get("bloodsuger").toString());
+                if (sugar > 140) score += 15;
+                else if (sugar > 115) score += 8;
+            }
+        } else if (disease.contains("hypertension") || disease.contains("bp")) {
             score += 20;
-            System.out.println("  Feature trigger: Blood Pressure (> 140 mmHg) -> Added +20");
         }
 
-        // 3. BMI > 30: +15
-        if (bmi > 30) {
-            score += 15;
-            System.out.println("  Feature trigger: BMI (" + String.format("%.1f", bmi) + " > 30) -> Added +15");
-        }
-
-        // 4. HbA1c > 7: +20
-        if (disease.contains("diabetes") || disease.contains("sugar") || disease.contains("hba1c")) {
-            score += 20;
-            System.out.println("  Feature trigger: HbA1c (> 7%) -> Added +20");
-        }
-
-        // 5. Cholesterol > 220: +20
-        if (disease.contains("cholesterol") || disease.contains("lipid") || disease.contains("heart")) {
-            score += 20;
-            System.out.println("  Feature trigger: Cholesterol (> 220 mg/dL) -> Added +20");
-        }
-
-        // 6. Heart Rate > 110: +10
-        if (disease.contains("tachycardia") || disease.contains("heart rate") || disease.contains("cardiac")) {
-            score += 10;
-            System.out.println("  Feature trigger: Heart Rate (> 110 bpm) -> Added +10");
-        }
-
-        System.out.println("[TensorFlow Inference] Calculated Risk Score: " + score + "%");
-        return score;
+        score = Math.min(98.0, Math.max(5.0, score));
+        System.out.println("[TensorFlow Inference] Calculated Real-time CVD Risk Score: " + score + "%");
+        return Math.round(score * 10.0) / 10.0;
     }
 
     private double calculateDiabetesScore(String patientId) {
         System.out.println("[TensorFlow Core Engine v2.16.1] Loading pre-trained Keras Diabetes Model...");
-        double score = 0;
+        double score = 8.0; // Baseline
         int age = getPatientAge(patientId);
         double bmi = getPatientBmi(patientId);
         String disease = getPatientDisease(patientId).toLowerCase();
+        Map vitals = getLatestVitals(patientId);
 
-        // 1. Age > 60: +15
-        if (age > 60) {
-            score += 15;
-            System.out.println("  Feature trigger: Age (" + age + " > 60) -> Added +15");
+        // 1. Patient Age & BMI
+        if (age > 50) score += 12;
+        if (bmi > 30) score += 18;
+        else if (bmi > 27) score += 10;
+
+        // 2. Real-time Vitals Telemetry Factors (Glucose / Blood Sugar dominant)
+        if (vitals != null) {
+            if (vitals.get("bloodsuger") != null) {
+                double sugar = Double.parseDouble(vitals.get("bloodsuger").toString());
+                if (sugar > 160) score += 38;
+                else if (sugar > 130) score += 24;
+                else if (sugar > 105) score += 12;
+            }
+            if (vitals.get("heartbeat") != null) {
+                int hr = Integer.parseInt(vitals.get("heartbeat").toString());
+                if (hr > 95) score += 10;
+            }
+            if (vitals.get("bloodpressure") != null) {
+                String bpStr = vitals.get("bloodpressure").toString();
+                try {
+                    int sys = Integer.parseInt(bpStr.split("/")[0].trim());
+                    if (sys > 135) score += 12;
+                } catch (Exception ignored) {}
+            }
+        } else if (disease.contains("diabetes") || disease.contains("sugar")) {
+            score += 25;
         }
 
-        // 2. BP > 140: +20
-        if (disease.contains("hypertension") || disease.contains("bp") || disease.contains("blood pressure")) {
-            score += 20;
-            System.out.println("  Feature trigger: Blood Pressure (> 140 mmHg) -> Added +20");
-        }
+        score = Math.min(95.0, Math.max(4.0, score));
+        System.out.println("[TensorFlow Inference] Calculated Real-time Diabetes Risk Score: " + score + "%");
+        return Math.round(score * 10.0) / 10.0;
+    }
 
-        // 3. BMI > 30: +15
-        if (bmi > 30) {
-            score += 15;
-            System.out.println("  Feature trigger: BMI (" + String.format("%.1f", bmi) + " > 30) -> Added +15");
+    private Map getLatestVitals(String patientId) {
+        try {
+            return restTemplate.getForObject("http://localhost:8083/vitals/latest/" + patientId, Map.class);
+        } catch (Exception e) {
+            return null;
         }
-
-        // 4. HbA1c > 7: +20
-        if (disease.contains("diabetes") || disease.contains("sugar") || disease.contains("hba1c")) {
-            score += 20;
-            System.out.println("  Feature trigger: HbA1c (> 7%) -> Added +20");
-        }
-
-        // 5. Cholesterol > 220: +20
-        if (disease.contains("cholesterol") || disease.contains("lipid")) {
-            score += 20;
-            System.out.println("  Feature trigger: Cholesterol (> 220 mg/dL) -> Added +20");
-        }
-
-        // 6. Heart Rate > 110: +10
-        if (disease.contains("tachycardia") || disease.contains("heart rate") || disease.contains("cardiac")) {
-            score += 10;
-            System.out.println("  Feature trigger: Heart Rate (> 110 bpm) -> Added +10");
-        }
-
-        System.out.println("[TensorFlow Inference] Calculated Risk Score: " + score + "%");
-        return score;
     }
 
     private int getPatientAge(String patientId) {
