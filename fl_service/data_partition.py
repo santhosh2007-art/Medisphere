@@ -165,7 +165,7 @@ def prepare_federated_datasets(dataset_type='cvd', num_hospitals=5, test_size=0.
 
 if __name__ == "__main__":
     nodes, val_data, _ = prepare_federated_datasets(dataset_type='cvd', num_hospitals=5)
-    print(f"=== Non-IID Data Partition Summary ===")
-    print(f"Validation Set Samples: {val_data['n_samples']}")
+    print(f"=== Non-IID Data Partition Summary ===", flush=True)
+    print(f"Validation Set Samples: {val_data['n_samples']}", flush=True)
     for node in nodes:
-        print(f"[{node['hospital_id']}] Samples: {node['n_samples']} | Positive Risk Ratio: {node['pos_ratio']*100:.1f}%")
+        print(f"[{node['hospital_id']}] Samples: {node['n_samples']} | Positive Risk Ratio: {node['pos_ratio']*100:.1f}%", flush=True)
