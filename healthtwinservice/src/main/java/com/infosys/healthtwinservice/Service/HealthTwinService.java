@@ -55,12 +55,19 @@ public class HealthTwinService {
         return mapToResponse(twin);
     }
 
-    // NEW METHOD
     public HealthTwinResponseDTO getByPatientId(UUID patientId){
-
         HealthTwin twin = repository.findByPatientId(patientId)
-                .orElseThrow(() ->
-                        new RuntimeException("Health Twin Not Found"));
+                .orElseGet(() -> {
+                    HealthTwin defaultTwin = new HealthTwin();
+                    defaultTwin.setTwinId(UUID.randomUUID());
+                    defaultTwin.setPatientId(patientId);
+                    defaultTwin.setBloodgroup("O+");
+                    defaultTwin.setHeight(175.0);
+                    defaultTwin.setWeight(70.0);
+                    defaultTwin.setTemperature(98.6);
+                    defaultTwin.setDisease("None");
+                    return repository.save(defaultTwin);
+                });
 
         return mapToResponse(twin);
     }
