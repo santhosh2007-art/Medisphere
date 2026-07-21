@@ -285,15 +285,14 @@ export const Patient360 = () => {
   const startVitalsStream = () => {
     if (isStreaming) return;
     setIsStreaming(true);
-    
-    streamIntervalRef.current = setInterval(async () => {
-      // Simulate wearable sensor inputs
-      const randomHR = Math.floor(65 + Math.random() * 40); // 65-105 bpm
-      const bpSystolic = Math.floor(115 + Math.random() * 20); // 115-135
-      const bpDiastolic = Math.floor(75 + Math.random() * 10); // 75-85
-      const randomSpO2 = Math.floor(95 + Math.random() * 5); // 95-100%
-      const randomSugar = Math.floor(85 + Math.random() * 40); // 85-125 mg/dL
-      const randomTemp = (97.5 + Math.random() * 2).toFixed(1); // 97.5 - 99.5 F
+
+    const sendSingleTick = async () => {
+      // Dynamic wearable sensor inputs with physiological variations
+      const randomHR = Math.floor(66 + Math.random() * 38); // 66-104 bpm
+      const bpSystolic = Math.floor(116 + Math.random() * 22); // 116-138
+      const bpDiastolic = Math.floor(74 + Math.random() * 12); // 74-86
+      const randomSpO2 = Math.floor(96 + Math.random() * 4); // 96-99%
+      const randomSugar = Math.floor(88 + Math.random() * 35); // 88-123 mg/dL
 
       const vitalsPayload = {
         patientId: id,
@@ -304,24 +303,28 @@ export const Patient360 = () => {
         pulserate: randomHR
       };
 
+      // Instantly update UI cards state for zero latency visual feedback
+      setData360(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          vitals: vitalsPayload
+        };
+      });
+
       try {
-        // Publish to Kafka vitals stream endpoint
+        // Publish to Spring Kafka vitals stream endpoint
         await api.publishVitals(vitalsPayload);
-        
-        // Fetch updated latest vitals
-        const latestRes = await api.getLatestVitals(id);
-        
-        setData360(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            vitals: latestRes.data
-          };
-        });
       } catch (err) {
-        console.error('Error streaming vitals:', err);
+        console.error('Error streaming vitals to Kafka:', err);
       }
-    }, 3000);
+    };
+
+    // Execute first tick immediately upon clicking Simulate Stream
+    sendSingleTick();
+
+    // Repeat tick every 2 seconds
+    streamIntervalRef.current = setInterval(sendSingleTick, 2000);
   };
 
   const toggleStreamingState = () => {
