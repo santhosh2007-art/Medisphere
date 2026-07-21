@@ -78,6 +78,26 @@ export const Patient360 = () => {
   const [modelSaving, setModelSaving] = useState(false);
 
 
+  const calculateAge = (dobString) => {
+    if (!dobString) return '';
+    try {
+      const dob = new Date(dobString);
+      const diffMs = Date.now() - dob.getTime();
+      const ageDate = new Date(diffMs);
+      return Math.abs(ageDate.getUTCFullYear() - 1970) + ' Yrs';
+    } catch {
+      return '';
+    }
+  };
+
+  const stopVitalsStream = () => {
+    if (streamIntervalRef.current) {
+      clearInterval(streamIntervalRef.current);
+      streamIntervalRef.current = null;
+    }
+    setIsStreaming(false);
+  };
+
   useEffect(() => {
     if (user && user.roles?.includes('PATIENT') && user.patientId !== id) {
       navigate(`/patient/${user.patientId}`);
@@ -302,14 +322,6 @@ export const Patient360 = () => {
         console.error('Error streaming vitals:', err);
       }
     }, 3000);
-  };
-
-  const stopVitalsStream = () => {
-    if (streamIntervalRef.current) {
-      clearInterval(streamIntervalRef.current);
-      streamIntervalRef.current = null;
-    }
-    setIsStreaming(false);
   };
 
   const toggleStreamingState = () => {
