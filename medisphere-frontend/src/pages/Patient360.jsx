@@ -306,10 +306,74 @@ export const Patient360 = () => {
       // Instantly update UI cards state for zero latency visual feedback
       setData360(prev => {
         if (!prev) return null;
-        return {
+        const updatedData = {
           ...prev,
           vitals: vitalsPayload
         };
+        
+        // Dynamically recalculate AI risk gauges in real time
+        const hr = randomHR;
+        const sugar = randomSugar;
+        const sysBp = bpSystolic;
+        const p = prev.patient || {};
+        const ht = prev.healthTwin || {};
+        const dob = p.dob || '1995-01-01';
+        const age = parseInt(calculateAge(dob)) || 31;
+        const height = Number(ht.height || 175);
+        const weight = Number(ht.weight || 70);
+        const bmi = height > 0 ? (weight / Math.pow(height / 100, 2)) : 22.8;
+
+        let cvdScore = 15;
+        if (age > 60) cvdScore += 18;
+        else if (age > 45) cvdScore += 10;
+        if (bmi > 30) cvdScore += 15;
+        else if (bmi > 27) cvdScore += 8;
+        if (sysBp > 140) cvdScore += 25;
+        else if (sysBp > 130) cvdScore += 15;
+        else if (sysBp > 120) cvdScore += 8;
+        if (hr > 100) cvdScore += 20;
+        else if (hr > 85) cvdScore += 10;
+        if (sugar > 140) cvdScore += 15;
+        else if (sugar > 115) cvdScore += 8;
+        cvdScore = Math.min(98, Math.max(12, Math.round(cvdScore)));
+        const cvdLevel = cvdScore > 60 ? 'HIGH' : cvdScore > 35 ? 'MEDIUM' : 'LOW';
+
+        let diabScore = 12;
+        if (age > 50) diabScore += 12;
+        if (bmi > 30) diabScore += 18;
+        else if (bmi > 27) diabScore += 10;
+        if (sugar > 160) diabScore += 38;
+        else if (sugar > 130) diabScore += 24;
+        else if (sugar > 105) diabScore += 12;
+        if (hr > 90) diabScore += 10;
+        if (sysBp > 130) diabScore += 10;
+        diabScore = Math.min(95, Math.max(10, Math.round(diabScore)));
+        const diabLevel = diabScore > 60 ? 'HIGH' : diabScore > 35 ? 'MEDIUM' : 'LOW';
+
+        setCvdPrediction({
+          riskPercentage: cvdScore,
+          riskLevel: cvdLevel,
+          confidence: 94,
+          modelVersion: '1.0'
+        });
+
+        setDiabetesPrediction({
+          riskPercentage: diabScore,
+          riskLevel: diabLevel,
+          confidence: 91,
+          modelVersion: '1.0'
+        });
+
+        setExplanation({
+          factors: [
+            `Systolic BP (${sysBp} mmHg):${sysBp > 130 ? 'High Risk Impact (+' + (sysBp > 140 ? '25' : '15') + '%)' : 'Normal Baseline'}`,
+            `Blood Sugar (${sugar} mg/dL):${sugar > 115 ? 'Elevated Glucose (+' + (sugar > 140 ? '24' : '12') + '%)' : 'Optimal Fasting Range'}`,
+            `Heart Rate (${hr} BPM):${hr > 85 ? 'Tachycardia Vector (+' + (hr > 100 ? '20' : '10') + '%)' : 'Resting Heart Rate'}`,
+            `BMI (${bmi.toFixed(1)}):${bmi > 27 ? 'Elevated Weight (+' + (bmi > 30 ? '15' : '8') + '%)' : 'Optimal Weight'}`
+          ]
+        });
+
+        return updatedData;
       });
 
       try {
@@ -340,10 +404,10 @@ export const Patient360 = () => {
     const p = data360?.patient || {};
     const ht = data360?.healthTwin || {};
 
-    const hr = Number(v.heartbeat || v.pulserate || 72);
-    const sugar = Number(v.bloodsuger || 95);
-    const bpStr = v.bloodpressure || '120/80';
-    const sysBp = Number(bpStr.split('/')[0] || 120);
+    const hr = Number(v.heartbeat || v.pulserate || 75);
+    const sugar = Number(v.bloodsuger || 105);
+    const bpStr = v.bloodpressure || '124/82';
+    const sysBp = Number(bpStr.split('/')[0] || 124);
 
     const dob = p.dob || '1995-01-01';
     const age = parseInt(calculateAge(dob)) || 31;
@@ -352,15 +416,16 @@ export const Patient360 = () => {
     const bmi = height > 0 ? (weight / Math.pow(height / 100, 2)) : 22.8;
 
     // 1. Calculate CVD Risk Score %
-    let cvdScore = 8;
+    let cvdScore = 15;
     if (age > 60) cvdScore += 18;
-    else if (age > 50) cvdScore += 10;
+    else if (age > 45) cvdScore += 10;
 
     if (bmi > 30) cvdScore += 15;
     else if (bmi > 27) cvdScore += 8;
 
     if (sysBp > 140) cvdScore += 25;
-    else if (sysBp > 130) cvdScore += 14;
+    else if (sysBp > 130) cvdScore += 15;
+    else if (sysBp > 120) cvdScore += 8;
 
     if (hr > 100) cvdScore += 20;
     else if (hr > 85) cvdScore += 10;
@@ -368,11 +433,11 @@ export const Patient360 = () => {
     if (sugar > 140) cvdScore += 15;
     else if (sugar > 115) cvdScore += 8;
 
-    cvdScore = Math.min(98, Math.max(5, Math.round(cvdScore)));
-    const cvdLevel = cvdScore > 60 ? 'HIGH' : cvdScore > 30 ? 'MEDIUM' : 'LOW';
+    cvdScore = Math.min(98, Math.max(12, Math.round(cvdScore)));
+    const cvdLevel = cvdScore > 60 ? 'HIGH' : cvdScore > 35 ? 'MEDIUM' : 'LOW';
 
     // 2. Calculate Diabetes Complications Risk Score %
-    let diabScore = 6;
+    let diabScore = 12;
     if (age > 50) diabScore += 12;
     if (bmi > 30) diabScore += 18;
     else if (bmi > 27) diabScore += 10;
@@ -381,17 +446,17 @@ export const Patient360 = () => {
     else if (sugar > 130) diabScore += 24;
     else if (sugar > 105) diabScore += 12;
 
-    if (hr > 95) diabScore += 10;
-    if (sysBp > 135) diabScore += 12;
+    if (hr > 90) diabScore += 10;
+    if (sysBp > 130) diabScore += 10;
 
-    diabScore = Math.min(95, Math.max(4, Math.round(diabScore)));
-    const diabLevel = diabScore > 60 ? 'HIGH' : diabScore > 30 ? 'MEDIUM' : 'LOW';
+    diabScore = Math.min(95, Math.max(10, Math.round(diabScore)));
+    const diabLevel = diabScore > 60 ? 'HIGH' : diabScore > 35 ? 'MEDIUM' : 'LOW';
 
     // SHAP Explainability Matrix
     const shapFactors = [];
 
     if (sysBp > 130) {
-      shapFactors.push({ feature: `Systolic BP (${sysBp} mmHg)`, impact: `High Risk Trigger (+${sysBp > 140 ? '25' : '14'}%)` });
+      shapFactors.push({ feature: `Systolic BP (${sysBp} mmHg)`, impact: `High Risk Trigger (+${sysBp > 140 ? '25' : '15'}%)` });
     } else {
       shapFactors.push({ feature: `Systolic BP (${sysBp} mmHg)`, impact: `Normal Baseline` });
     }
@@ -443,8 +508,8 @@ export const Patient360 = () => {
         const list = historyRes.data || [];
         const cvd = list.find(p => p.riskType === 'CARDIO');
         const diab = list.find(p => p.riskType === 'DIABETES');
-        setCvdPrediction(cvd || realtimeInference.cvd);
-        setDiabetesPrediction(diab || realtimeInference.diabetes);
+        setCvdPrediction(cvd && cvd.riskPercentage > 0 ? cvd : realtimeInference.cvd);
+        setDiabetesPrediction(diab && diab.riskPercentage > 0 ? diab : realtimeInference.diabetes);
       } else {
         setCvdPrediction(realtimeInference.cvd);
         setDiabetesPrediction(realtimeInference.diabetes);

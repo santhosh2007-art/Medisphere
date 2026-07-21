@@ -79,11 +79,9 @@ public class VitalsService {
         return dto;
     }
     public VitalsResponseDTO getLatestByPatientId(UUID patientId) {
-
-        Vitals vitals = repository
+        return repository
                 .findTopByPatientIdOrderByRecordedAtDesc(patientId)
-                .orElseThrow(() -> new RuntimeException("Vitals not found"));
-
-        return mapToDTO(vitals);
+                .map(this::mapToDTO)
+                .orElse(null);
     }
 }
