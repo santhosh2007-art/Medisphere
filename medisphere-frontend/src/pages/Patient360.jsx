@@ -281,113 +281,120 @@ export const Patient360 = () => {
     }
   };
 
-  // Real-time Ingestion Stream simulation via Kafka endpoint
   const startVitalsStream = () => {
     if (isStreaming) return;
     setIsStreaming(true);
 
+    // ── Physiological State Machine ──────────────────────────────
+    const PROFILES = {
+      REST:     { hr:[58,72],  sys:[112,122], spo2:[97,100], temp:[97.8,98.4], sugar:[88,100],  dur:[8,15] },
+      WALKING:  { hr:[78,98],  sys:[118,132], spo2:[96,99],  temp:[98.2,99.0], sugar:[92,115],  dur:[6,12] },
+      EXERCISE: { hr:[110,148],sys:[130,158], spo2:[94,97],  temp:[99.0,100.4],sugar:[110,145], dur:[5,10] },
+      RECOVERY: { hr:[80,100], sys:[118,130], spo2:[96,99],  temp:[98.6,99.4], sugar:[100,125], dur:[4,8]  },
+      STRESS:   { hr:[90,115], sys:[128,148], spo2:[95,98],  temp:[98.4,99.2], sugar:[105,150], dur:[3,7]  },
+      SLEEP:    { hr:[50,64],  sys:[104,116], spo2:[95,99],  temp:[97.2,97.8], sugar:[82,96],   dur:[10,20]},
+    };
+    const TRANSITIONS = {
+      REST:['WALKING','SLEEP','REST','REST','STRESS'], WALKING:['REST','EXERCISE','WALKING','RECOVERY'],
+      EXERCISE:['RECOVERY','RECOVERY','EXERCISE'],     RECOVERY:['REST','WALKING','REST'],
+      STRESS:['REST','REST','WALKING','STRESS'],       SLEEP:['REST','REST','SLEEP','SLEEP'],
+    };
+
+    const sim = { state:'REST', ticks:10, hr:68, sys:118, dia:78, spo2:98.5, temp:98.2, sugar:94 };
+
+    const walk = (cur, lo, hi, spd=0.12, noise=0.6) =>
+      cur + ((lo+hi)/2 - cur)*spd + (Math.random()-0.5)*noise*2;
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
     const sendSingleTick = async () => {
-      // Dynamic wearable sensor inputs with physiological variations
-      const randomHR = Math.floor(66 + Math.random() * 38); // 66-104 bpm
-      const bpSystolic = Math.floor(116 + Math.random() * 22); // 116-138
-      const bpDiastolic = Math.floor(74 + Math.random() * 12); // 74-86
-      const randomSpO2 = Math.floor(96 + Math.random() * 4); // 96-99%
-      const randomSugar = Math.floor(88 + Math.random() * 35); // 88-123 mg/dL
+      // State transition
+      sim.ticks -= 1;
+      if (sim.ticks <= 0) {
+        const opts = TRANSITIONS[sim.state];
+        sim.state = opts[Math.floor(Math.random()*opts.length)];
+        const [dlo,dhi] = PROFILES[sim.state].dur;
+        sim.ticks = Math.floor(dlo + Math.random()*(dhi-dlo));
+      }
+      const p = PROFILES[sim.state];
+
+      // Smooth random-walk toward state targets
+      sim.hr    = clamp(walk(sim.hr,   p.hr[0],   p.hr[1],   0.12, 0.8), 35, 200);
+      sim.sys   = clamp(walk(sim.sys,  p.sys[0],  p.sys[1],  0.10, 0.6), 70, 200);
+      sim.spo2  = clamp(walk(sim.spo2, p.spo2[0], p.spo2[1], 0.08, 0.12), 82, 100);
+      sim.temp  = clamp(walk(sim.temp, p.temp[0], p.temp[1], 0.05, 0.04), 95, 106);
+      sim.sugar = clamp(walk(sim.sugar,p.sugar[0],p.sugar[1],0.08, 1.0), 40, 300);
+      sim.dia   = clamp(sim.sys*0.64+(Math.random()-0.5)*0.8, 40, 120);
+
+      const hr    = Math.round(sim.hr);
+      const bpSys = Math.round(sim.sys);
+      const bpDia = Math.round(sim.dia);
+      const spo2  = Math.round(sim.spo2*10)/10;
+      const temp  = Math.round(sim.temp*10)/10;
+      const sugar = Math.round(sim.sugar*10)/10;
+
+      // Alert detection
+      let alertLevel = 'NORMAL';
+      if (hr<40||hr>130||bpSys>180||bpSys<70||spo2<90||sugar<55||sugar>200||temp>103) alertLevel='CRITICAL';
+      else if (hr<50||hr>110||bpSys>150||bpSys<85||spo2<94||sugar<70||sugar>160||temp>100.5) alertLevel='WARNING';
 
       const vitalsPayload = {
         patientId: id,
-        heartbeat: randomHR,
-        bloodpressure: `${bpSystolic}/${bpDiastolic}`,
-        oxygenlevel: randomSpO2,
-        bloodsuger: randomSugar,
-        pulserate: randomHR
+        heartbeat: hr,
+        bloodpressure: `${bpSys}/${bpDia}`,
+        oxygenlevel: spo2,
+        bloodsuger: sugar,
+        pulserate: hr + Math.round((Math.random()-0.5)),
+        temperature: temp,
+        activityState: sim.state,
+        alertLevel,
       };
 
-      // Instantly update UI cards state for zero latency visual feedback
+      // Zero-latency UI update + AI risk recalculation
       setData360(prev => {
         if (!prev) return null;
-        const updatedData = {
-          ...prev,
-          vitals: vitalsPayload
-        };
-        
-        // Dynamically recalculate AI risk gauges in real time
-        const hr = randomHR;
-        const sugar = randomSugar;
-        const sysBp = bpSystolic;
-        const p = prev.patient || {};
-        const ht = prev.healthTwin || {};
-        const dob = p.dob || '1995-01-01';
-        const age = parseInt(calculateAge(dob)) || 31;
-        const height = Number(ht.height || 175);
-        const weight = Number(ht.weight || 70);
-        const bmi = height > 0 ? (weight / Math.pow(height / 100, 2)) : 22.8;
+        const updatedData = { ...prev, vitals: vitalsPayload };
+        const p2  = prev.patient || {};
+        const ht  = prev.healthTwin || {};
+        const age = parseInt(calculateAge(p2.dob||'1995-01-01'))||31;
+        const h   = Number(ht.height||175);
+        const w   = Number(ht.weight||70);
+        const bmi = h>0 ? (w/Math.pow(h/100,2)) : 22.8;
 
         let cvdScore = 15;
-        if (age > 60) cvdScore += 18;
-        else if (age > 45) cvdScore += 10;
-        if (bmi > 30) cvdScore += 15;
-        else if (bmi > 27) cvdScore += 8;
-        if (sysBp > 140) cvdScore += 25;
-        else if (sysBp > 130) cvdScore += 15;
-        else if (sysBp > 120) cvdScore += 8;
-        if (hr > 100) cvdScore += 20;
-        else if (hr > 85) cvdScore += 10;
-        if (sugar > 140) cvdScore += 15;
-        else if (sugar > 115) cvdScore += 8;
+        if (age>60) cvdScore+=18; else if (age>45) cvdScore+=10;
+        if (bmi>30) cvdScore+=15; else if (bmi>27) cvdScore+=8;
+        if (bpSys>140) cvdScore+=25; else if (bpSys>130) cvdScore+=15; else if (bpSys>120) cvdScore+=8;
+        if (hr>100) cvdScore+=20; else if (hr>85) cvdScore+=10;
+        if (sugar>140) cvdScore+=15; else if (sugar>115) cvdScore+=8;
+        if (spo2<94) cvdScore+=12; else if (spo2<96) cvdScore+=5;
+        if (alertLevel==='CRITICAL') cvdScore+=15; else if (alertLevel==='WARNING') cvdScore+=8;
         cvdScore = Math.min(98, Math.max(12, Math.round(cvdScore)));
-        const cvdLevel = cvdScore > 60 ? 'HIGH' : cvdScore > 35 ? 'MEDIUM' : 'LOW';
 
         let diabScore = 12;
-        if (age > 50) diabScore += 12;
-        if (bmi > 30) diabScore += 18;
-        else if (bmi > 27) diabScore += 10;
-        if (sugar > 160) diabScore += 38;
-        else if (sugar > 130) diabScore += 24;
-        else if (sugar > 105) diabScore += 12;
-        if (hr > 90) diabScore += 10;
-        if (sysBp > 130) diabScore += 10;
+        if (age>50) diabScore+=12;
+        if (bmi>30) diabScore+=18; else if (bmi>27) diabScore+=10;
+        if (sugar>160) diabScore+=38; else if (sugar>130) diabScore+=24; else if (sugar>105) diabScore+=12;
+        if (hr>90) diabScore+=10;
+        if (bpSys>130) diabScore+=10;
         diabScore = Math.min(95, Math.max(10, Math.round(diabScore)));
-        const diabLevel = diabScore > 60 ? 'HIGH' : diabScore > 35 ? 'MEDIUM' : 'LOW';
 
-        setCvdPrediction({
-          riskPercentage: cvdScore,
-          riskLevel: cvdLevel,
-          confidence: 94,
-          modelVersion: '1.0'
-        });
-
-        setDiabetesPrediction({
-          riskPercentage: diabScore,
-          riskLevel: diabLevel,
-          confidence: 91,
-          modelVersion: '1.0'
-        });
-
-        setExplanation({
-          factors: [
-            `Systolic BP (${sysBp} mmHg):${sysBp > 130 ? 'High Risk Impact (+' + (sysBp > 140 ? '25' : '15') + '%)' : 'Normal Baseline'}`,
-            `Blood Sugar (${sugar} mg/dL):${sugar > 115 ? 'Elevated Glucose (+' + (sugar > 140 ? '24' : '12') + '%)' : 'Optimal Fasting Range'}`,
-            `Heart Rate (${hr} BPM):${hr > 85 ? 'Tachycardia Vector (+' + (hr > 100 ? '20' : '10') + '%)' : 'Resting Heart Rate'}`,
-            `BMI (${bmi.toFixed(1)}):${bmi > 27 ? 'Elevated Weight (+' + (bmi > 30 ? '15' : '8') + '%)' : 'Optimal Weight'}`
-          ]
-        });
-
+        setCvdPrediction({ riskPercentage: cvdScore, riskLevel: cvdScore>60?'HIGH':cvdScore>35?'MEDIUM':'LOW', confidence:94, modelVersion:'1.0' });
+        setDiabetesPrediction({ riskPercentage: diabScore, riskLevel: diabScore>60?'HIGH':diabScore>35?'MEDIUM':'LOW', confidence:91, modelVersion:'1.0' });
+        setExplanation({ factors: [
+          `Systolic BP (${bpSys} mmHg):${bpSys>130?'High Risk Trigger (+'+( bpSys>140?'25':'15')+'%)':'Normal Baseline'}`,
+          `Blood Sugar (${sugar} mg/dL):${sugar>115?'Elevated Glucose (+'+(sugar>140?'24':'12')+'%)':'Optimal Fasting Range'}`,
+          `Heart Rate (${hr} BPM):${hr>85?'Tachycardia Vector (+'+(hr>100?'20':'10')+'%)':'Resting Heart Rate'}`,
+          `SpO2 (${spo2}%):${spo2<94?'Hypoxia Risk (+12%)':spo2<96?'Mild Desaturation (+5%)':'Normal Saturation'}`,
+          `BMI (${bmi.toFixed(1)}):${bmi>27?'Elevated Weight (+'+(bmi>30?'15':'8')+'%)':'Optimal BMI Range'}`,
+          `Activity: ${sim.state} | Alert: ${alertLevel}`,
+        ]});
         return updatedData;
       });
 
-      try {
-        // Publish to Spring Kafka vitals stream endpoint
-        await api.publishVitals(vitalsPayload);
-      } catch (err) {
-        console.error('Error streaming vitals to Kafka:', err);
-      }
+      try { await api.publishVitals(vitalsPayload); } catch (err) { console.error('Kafka publish error:', err); }
     };
 
-    // Execute first tick immediately upon clicking Simulate Stream
     sendSingleTick();
-
-    // Repeat tick every 2 seconds
     streamIntervalRef.current = setInterval(sendSingleTick, 2000);
   };
 

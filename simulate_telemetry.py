@@ -5,152 +5,360 @@ import urllib.request
 import urllib.error
 import argparse
 import sys
+import math
 
-# Target API Endpoint
+# ─────────────────────────────────────────────
+#  MediSphere Enhanced Wearable Telemetry Simulator
+#  Simulates real BLE wearable sensor data streams
+#  with physiologically accurate multi-state modeling
+# ─────────────────────────────────────────────
+
 GATEWAY_URL = "http://localhost:8080/vitals/wearable/publish"
-DIRECT_URL = "http://localhost:8083/vitals/wearable/publish"
+DIRECT_URL  = "http://localhost:8083/vitals/wearable/publish"
 
 DEFAULT_PATIENT_ID = "35f51e3e-66fd-4f87-85ad-affa0dde1156"
 
-class DynamicWearableSensorSimulator:
-    """
-    Simulates a smart medical wearable device continuously generating dynamic 
-    physiological biometric telemetry (Heart Rate, BP, SpO2, Blood Sugar).
-    Publishes JSON readings to Spring Cloud Gateway -> Spring Kafka Producer -> MongoDB.
-    """
-    def __init__(self, patient_id=DEFAULT_PATIENT_ID, interval=2.0):
-        self.patient_id = patient_id
-        self.interval = interval
-        
-        # Initial physiological baseline state
-        self.heartbeat = 72
-        self.systolic = 120
-        self.diastolic = 80
-        self.oxygenlevel = 98
-        self.bloodsuger = 95.0
-        self.pulserate = 72
-        
-        # Simulation event counter
-        self.tick_count = 0
+# ANSI color codes for console
+RED     = "\033[91m"
+YELLOW  = "\033[93m"
+GREEN   = "\033[92m"
+CYAN    = "\033[96m"
+BLUE    = "\033[94m"
+MAGENTA = "\033[95m"
+DIM     = "\033[2m"
+BOLD    = "\033[1m"
+RESET   = "\033[0m"
 
+# ─────────────────────────────────────────────
+#  ACTIVITY STATE PROFILES
+#  Each state defines physiological target ranges
+# ─────────────────────────────────────────────
+ACTIVITY_PROFILES = {
+    "REST": {
+        "hr_range":    (58, 72),
+        "sys_range":   (112, 122),
+        "spo2_range":  (97, 100),
+        "temp_range":  (97.8, 98.4),
+        "sugar_range": (88, 100),
+        "duration_ticks": (8, 15),
+        "color": GREEN,
+    },
+    "WALKING": {
+        "hr_range":    (78, 98),
+        "sys_range":   (118, 132),
+        "spo2_range":  (96, 99),
+        "temp_range":  (98.2, 99.0),
+        "sugar_range": (92, 115),
+        "duration_ticks": (6, 12),
+        "color": CYAN,
+    },
+    "EXERCISE": {
+        "hr_range":    (110, 148),
+        "sys_range":   (130, 158),
+        "spo2_range":  (94, 97),
+        "temp_range":  (99.0, 100.4),
+        "sugar_range": (110, 145),
+        "duration_ticks": (5, 10),
+        "color": YELLOW,
+    },
+    "RECOVERY": {
+        "hr_range":    (80, 100),
+        "sys_range":   (118, 130),
+        "spo2_range":  (96, 99),
+        "temp_range":  (98.6, 99.4),
+        "sugar_range": (100, 125),
+        "duration_ticks": (4, 8),
+        "color": BLUE,
+    },
+    "STRESS": {
+        "hr_range":    (90, 115),
+        "sys_range":   (128, 148),
+        "spo2_range":  (95, 98),
+        "temp_range":  (98.4, 99.2),
+        "sugar_range": (105, 150),
+        "duration_ticks": (3, 7),
+        "color": MAGENTA,
+    },
+    "SLEEP": {
+        "hr_range":    (50, 64),
+        "sys_range":   (104, 116),
+        "spo2_range":  (95, 99),
+        "temp_range":  (97.2, 97.8),
+        "sugar_range": (82, 96),
+        "duration_ticks": (10, 20),
+        "color": DIM,
+    },
+}
+
+# State transition probability matrix (from → to)
+STATE_TRANSITIONS = {
+    "REST":     ["WALKING", "SLEEP", "REST", "REST", "STRESS"],
+    "WALKING":  ["REST", "EXERCISE", "WALKING", "WALKING", "RECOVERY"],
+    "EXERCISE": ["RECOVERY", "RECOVERY", "EXERCISE"],
+    "RECOVERY": ["REST", "WALKING", "REST"],
+    "STRESS":   ["REST", "REST", "WALKING", "STRESS"],
+    "SLEEP":    ["REST", "REST", "SLEEP", "SLEEP"],
+}
+
+# ─────────────────────────────────────────────
+class EnhancedWearableSimulator:
+    """
+    Physiologically accurate wearable device simulator.
+    Models 6 activity states with smooth random-walk drift,
+    realistic transitions, optional anomaly injection,
+    and color-coded console output.
+    """
+
+    def __init__(self, patient_id=DEFAULT_PATIENT_ID, interval=2.0,
+                 anomaly_mode=False, profile="ADULT_NORMAL"):
+        self.patient_id    = patient_id
+        self.interval      = interval
+        self.anomaly_mode  = anomaly_mode
+        self.tick_count    = 0
+        self.anomaly_injected = 0
+
+        # Current activity state
+        self.current_state = "REST"
+        self.state_ticks_remaining = random.randint(8, 15)
+
+        # Baseline vitals (smooth random-walk from here)
+        self.hr       = 68.0
+        self.systolic = 118.0
+        self.diastolic= 78.0
+        self.spo2     = 98.5
+        self.temp     = 98.2
+        self.sugar    = 94.0
+
+        # Anomaly injection counter
+        self._anomaly_countdown = random.randint(20, 40) if anomaly_mode else 999999
+
+    # ── State Machine ────────────────────────
+    def _transition_state(self):
+        next_states = STATE_TRANSITIONS[self.current_state]
+        self.current_state = random.choice(next_states)
+        profile = ACTIVITY_PROFILES[self.current_state]
+        lo, hi = profile["duration_ticks"]
+        self.state_ticks_remaining = random.randint(lo, hi)
+
+    def _get_target(self, key):
+        profile = ACTIVITY_PROFILES[self.current_state]
+        lo, hi = profile[key]
+        return (lo + hi) / 2.0
+
+    # ── Smooth Random Walk ───────────────────
+    def _walk(self, current, target, speed=0.15, noise=0.5):
+        """Smooth exponential walk towards target with small noise."""
+        drift = (target - current) * speed
+        jitter = random.gauss(0, noise)
+        return current + drift + jitter
+
+    # ── Anomaly Injection ────────────────────
+    def _maybe_inject_anomaly(self):
+        if not self.anomaly_mode:
+            return None
+
+        self._anomaly_countdown -= 1
+        if self._anomaly_countdown > 0:
+            return None
+
+        # Reset countdown
+        self._anomaly_countdown = random.randint(25, 45)
+        self.anomaly_injected += 1
+
+        anomaly_types = [
+            "BRADYCARDIA",       # Very low heart rate
+            "TACHYCARDIA",       # Very high heart rate
+            "HYPOTENSION",       # Low BP
+            "HYPERTENSION",      # High BP
+            "SPO2_DIP",          # Oxygen drop
+            "HYPOGLYCEMIA",      # Low blood sugar
+            "HYPERGLYCEMIA",     # High blood sugar
+            "FEVER",             # High temperature
+        ]
+        chosen = random.choice(anomaly_types)
+
+        overrides = {}
+        if chosen == "BRADYCARDIA":
+            overrides["hr"] = random.uniform(36, 48)
+        elif chosen == "TACHYCARDIA":
+            overrides["hr"] = random.uniform(135, 158)
+        elif chosen == "HYPOTENSION":
+            overrides["systolic"] = random.uniform(72, 86)
+            overrides["diastolic"] = random.uniform(46, 58)
+        elif chosen == "HYPERTENSION":
+            overrides["systolic"] = random.uniform(168, 192)
+            overrides["diastolic"] = random.uniform(102, 118)
+        elif chosen == "SPO2_DIP":
+            overrides["spo2"] = random.uniform(84, 91)
+        elif chosen == "HYPOGLYCEMIA":
+            overrides["sugar"] = random.uniform(52, 68)
+        elif chosen == "HYPERGLYCEMIA":
+            overrides["sugar"] = random.uniform(195, 240)
+        elif chosen == "FEVER":
+            overrides["temp"] = random.uniform(101.5, 104.0)
+
+        return chosen, overrides
+
+    # ── Generate Vitals ──────────────────────
     def generate_next_vitals(self):
-        """
-        Applies a realistic physiological random-walk drift model to vitals data,
-        punctuated by occasional stress/exercise events.
-        """
         self.tick_count += 1
-        
-        # Every 10 ticks, trigger a simulated physiological state transition
-        event_name = "NORMAL_DRIFT"
-        if self.tick_count % 15 in [5, 6, 7]:
-            event_name = "EXERCISE_BURST"
-            hb_delta = random.randint(3, 7)
-            bp_sys_delta = random.randint(2, 5)
-            sugar_delta = round(random.uniform(0.5, 2.0), 1)
-        elif self.tick_count % 15 in [11, 12]:
-            event_name = "RECOVERY_REST"
-            hb_delta = -random.randint(2, 5)
-            bp_sys_delta = -random.randint(1, 4)
-            sugar_delta = -round(random.uniform(0.3, 1.5), 1)
-        else:
-            hb_delta = random.choice([-2, -1, 0, 1, 2])
-            bp_sys_delta = random.choice([-2, -1, 0, 1, 2])
-            sugar_delta = round(random.uniform(-1.0, 1.0), 1)
-            
-        # Update Vitals within physiological safety bounds
-        self.heartbeat = max(55, min(145, self.heartbeat + hb_delta))
-        self.pulserate = self.heartbeat + random.choice([-1, 0, 1])
-        
-        self.systolic = max(100, min(160, self.systolic + bp_sys_delta))
-        self.diastolic = max(65, min(100, int(self.systolic * 0.65)))
-        
-        self.oxygenlevel = max(94, min(100, self.oxygenlevel + random.choice([-1, 0, 0, 1])))
-        self.bloodsuger = round(max(70.0, min(220.0, self.bloodsuger + sugar_delta)), 1)
-        
-        payload = {
-            "patientId": self.patient_id,
-            "heartbeat": self.heartbeat,
-            "bloodpressure": f"{self.systolic}/{self.diastolic}",
-            "oxygenlevel": self.oxygenlevel,
-            "bloodsuger": self.bloodsuger,
-            "pulserate": self.pulserate
-        }
-        return payload, event_name
 
-    def send_telemetry_packet(self, payload):
-        """Sends HTTP POST JSON payload to gateway / vitals service."""
-        json_data = json.dumps(payload).encode('utf-8')
-        
-        # Try Gateway first, fallback to direct VitalsService port 8083
-        urls_to_try = [GATEWAY_URL, DIRECT_URL]
-        
-        for url in urls_to_try:
+        # Decrement state counter → maybe transition
+        self.state_ticks_remaining -= 1
+        if self.state_ticks_remaining <= 0:
+            self._transition_state()
+
+        # Walk towards current state targets
+        self.hr       = self._walk(self.hr,       self._get_target("hr_range"),   speed=0.12, noise=0.8)
+        self.systolic = self._walk(self.systolic, self._get_target("sys_range"),  speed=0.10, noise=0.6)
+        self.spo2     = self._walk(self.spo2,     self._get_target("spo2_range"), speed=0.08, noise=0.15)
+        self.temp     = self._walk(self.temp,     self._get_target("temp_range"), speed=0.05, noise=0.05)
+        self.sugar    = self._walk(self.sugar,    self._get_target("sugar_range"),speed=0.08, noise=1.0)
+
+        # Diastolic: physiologically linked to systolic (~65% rule)
+        self.diastolic = self.systolic * 0.64 + random.gauss(0, 0.4)
+
+        # Hard clamp to realistic physiological limits
+        self.hr       = max(35,  min(200, self.hr))
+        self.systolic = max(70,  min(200, self.systolic))
+        self.diastolic= max(40,  min(120, self.diastolic))
+        self.spo2     = max(82,  min(100, self.spo2))
+        self.temp     = max(95.0,min(106.0, self.temp))
+        self.sugar    = max(40,  min(300, self.sugar))
+
+        anomaly_event = None
+
+        # Maybe override with anomaly
+        result = self._maybe_inject_anomaly()
+        if result:
+            anomaly_event, overrides = result
+            for k, v in overrides.items():
+                setattr(self, k, v)
+
+        # Build payload (matches MediSphere VitalsService schema)
+        payload = {
+            "patientId":   self.patient_id,
+            "heartbeat":   round(self.hr),
+            "bloodpressure": f"{round(self.systolic)}/{round(self.diastolic)}",
+            "oxygenlevel": round(self.spo2, 1),
+            "bloodsuger":  round(self.sugar, 1),
+            "pulserate":   round(self.hr) + random.randint(-1, 1),
+            "temperature": round(self.temp, 1),
+            "activityState": self.current_state,
+        }
+
+        return payload, self.current_state, anomaly_event
+
+    # ── Send to API ──────────────────────────
+    def send_telemetry(self, payload):
+        json_data = json.dumps(payload).encode("utf-8")
+        for url in [GATEWAY_URL, DIRECT_URL]:
             req = urllib.request.Request(
-                url,
-                data=json_data,
-                headers={'Content-Type': 'application/json'}
+                url, data=json_data,
+                headers={"Content-Type": "application/json"}
             )
             try:
-                with urllib.request.urlopen(req, timeout=5) as response:
-                    if response.status in [200, 201, 202]:
-                        return True, f"HTTP {response.status} OK", url
-            except urllib.error.HTTPError as e:
-                resp_text = e.read().decode('utf-8') if e.fp else str(e)
-                # If HTTPError, try next URL
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    if resp.status in [200, 201, 202]:
+                        return True, url
+            except:
                 continue
-            except Exception as e:
-                continue
-                
-        return False, "Failed to connect to Gateway or Vitals Service", GATEWAY_URL
+        return False, None
 
+    # ── Alert Level ──────────────────────────
+    def _alert_level(self, payload):
+        hr  = payload["heartbeat"]
+        sys = int(payload["bloodpressure"].split("/")[0])
+        spo2= payload["oxygenlevel"]
+        sug = payload["bloodsuger"]
+        temp= payload["temperature"]
+
+        if hr < 40 or hr > 130 or sys > 180 or sys < 70 or spo2 < 90 or sug < 55 or sug > 200 or temp > 103:
+            return "CRITICAL", RED
+        if hr < 50 or hr > 110 or sys > 150 or sys < 85 or spo2 < 94 or sug < 70 or sug > 160 or temp > 100.5:
+            return "WARNING", YELLOW
+        return "NORMAL", GREEN
+
+    # ── Main Loop ────────────────────────────
     def run_stream_loop(self, duration_sec=None):
-        """Main dynamic streaming loop."""
-        print("\n" + "="*75, flush=True)
-        print(f" MEDISPHERE DYNAMIC WEARABLE TELEMETRY SIMULATOR", flush=True)
-        print(f" Target Patient ID : {self.patient_id}", flush=True)
-        print(f" Stream Interval  : {self.interval} seconds", flush=True)
-        print(f" Target Endpoint  : {GATEWAY_URL}", flush=True)
-        print("="*75, flush=True)
-        print(f"{'Tick':<6} | {'Timestamp':<12} | {'HR (bpm)':<8} | {'BP (mmHg)':<10} | {'SpO2 (%)':<9} | {'Sugar (mg/dL)':<13} | {'Status':<15}", flush=True)
-        print("-" * 75, flush=True)
-        
-        start_time = time.time()
-        
+        state_color = ACTIVITY_PROFILES[self.current_state]["color"]
+
+        print(f"\n{BOLD}{'═'*85}{RESET}", flush=True)
+        print(f"{BOLD}  🩺 MEDISPHERE ENHANCED WEARABLE TELEMETRY SIMULATOR{RESET}", flush=True)
+        print(f"  Patient ID  : {CYAN}{self.patient_id}{RESET}", flush=True)
+        print(f"  Interval    : {self.interval}s per tick", flush=True)
+        print(f"  Anomaly Mode: {RED+'ON' if self.anomaly_mode else GREEN+'OFF'}{RESET}", flush=True)
+        print(f"  Gateway     : {GATEWAY_URL}", flush=True)
+        print(f"{BOLD}{'═'*85}{RESET}", flush=True)
+
+        header = (
+            f"{'Tick':<5} {'Time':<9} {'State':<10} "
+            f"{'HR':>5} {'BP':>10} {'SpO2':>6} "
+            f"{'Sugar':>7} {'Temp':>6} {'Alert':<10} {'Status'}"
+        )
+        print(f"{DIM}{header}{RESET}", flush=True)
+        print(f"{DIM}{'-'*85}{RESET}", flush=True)
+
+        start = time.time()
+
         try:
             while True:
-                payload, event_name = self.generate_next_vitals()
-                timestamp_str = time.strftime("%H:%M:%S")
-                
-                success, status_msg, used_url = self.send_telemetry_packet(payload)
-                
-                status_icon = "[SENT OK]" if success else "[PENDING]"
-                
-                print(
-                    f"{self.tick_count:<6} | {timestamp_str:<12} | "
-                    f"{payload['heartbeat']:<8} | {payload['bloodpressure']:<10} | "
-                    f"{payload['oxygenlevel']:<9} | {payload['bloodsuger']:<13.1f} | "
-                    f"{status_icon} ({event_name})",
-                    flush=True
-                )
-                
-                if duration_sec and (time.time() - start_time) >= duration_sec:
-                    print(f"\n[INFO] Simulation duration of {duration_sec}s reached. Stopping.", flush=True)
-                    break
-                    
-                time.sleep(self.interval)
-                
-        except KeyboardInterrupt:
-            print("\n" + "="*75, flush=True)
-            print(" [STOP] Dynamic Telemetry Stream stopped by user.", flush=True)
-            print("="*75 + "\n", flush=True)
+                payload, state, anomaly = self.generate_next_vitals()
+                ts = time.strftime("%H:%M:%S")
+                state_color = ACTIVITY_PROFILES[state]["color"]
+                alert_label, alert_color = self._alert_level(payload)
 
+                sent, used_url = self.send_telemetry(payload)
+                status_str = f"{GREEN}✓ SENT{RESET}" if sent else f"{RED}✗ FAIL{RESET}"
+
+                anomaly_tag = ""
+                if anomaly:
+                    anomaly_tag = f"  {RED}{BOLD}⚠ ANOMALY: {anomaly}{RESET}"
+
+                line = (
+                    f"{self.tick_count:<5} {ts:<9} "
+                    f"{state_color}{state:<10}{RESET} "
+                    f"{payload['heartbeat']:>5} "
+                    f"{payload['bloodpressure']:>10} "
+                    f"{payload['oxygenlevel']:>6.1f} "
+                    f"{payload['bloodsuger']:>7.1f} "
+                    f"{payload['temperature']:>6.1f} "
+                    f"{alert_color}{alert_label:<10}{RESET} "
+                    f"{status_str}{anomaly_tag}"
+                )
+                print(line, flush=True)
+
+                if duration_sec and (time.time() - start) >= duration_sec:
+                    print(f"\n{GREEN}[INFO] Duration {duration_sec}s reached. Stopping.{RESET}", flush=True)
+                    break
+
+                time.sleep(self.interval)
+
+        except KeyboardInterrupt:
+            print(f"\n{BOLD}{'═'*85}{RESET}", flush=True)
+            print(f"  {YELLOW}[STOP] Stream stopped.{RESET}  Ticks sent: {self.tick_count}  Anomalies injected: {self.anomaly_injected}", flush=True)
+            print(f"{BOLD}{'═'*85}{RESET}\n", flush=True)
+
+
+# ── Entry Point ──────────────────────────────
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MediSphere Dynamic Wearable Telemetry Simulator")
-    parser.add_argument("--patient-id", type=str, default=DEFAULT_PATIENT_ID, help="Target Patient UUID")
-    parser.add_argument("--interval", type=float, default=2.0, help="Stream tick interval in seconds (default: 2.0)")
-    parser.add_argument("--duration", type=float, default=None, help="Optional total run duration in seconds")
-    
+    parser = argparse.ArgumentParser(
+        description="MediSphere Enhanced Wearable Telemetry Simulator"
+    )
+    parser.add_argument("--patient-id", type=str,   default=DEFAULT_PATIENT_ID,
+                        help="Target Patient UUID")
+    parser.add_argument("--interval",   type=float, default=2.0,
+                        help="Tick interval in seconds (default: 2.0)")
+    parser.add_argument("--duration",   type=float, default=None,
+                        help="Total run duration in seconds (optional)")
+    parser.add_argument("--anomaly",    action="store_true", default=False,
+                        help="Enable random anomaly injection (CRITICAL/WARNING alerts)")
+
     args = parser.parse_args()
-    
-    simulator = DynamicWearableSensorSimulator(patient_id=args.patient_id, interval=args.interval)
-    simulator.run_stream_loop(duration_sec=args.duration)
+
+    sim = EnhancedWearableSimulator(
+        patient_id=args.patient_id,
+        interval=args.interval,
+        anomaly_mode=args.anomaly,
+    )
+    sim.run_stream_loop(duration_sec=args.duration)
