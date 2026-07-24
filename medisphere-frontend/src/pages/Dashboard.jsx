@@ -548,14 +548,15 @@ export const Dashboard = () => {
 
 const styles = {
   headerBlock: {
-    background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.03), rgba(59, 130, 246, 0.03))',
-    border: '1px solid rgba(255, 255, 255, 0.03)',
+    background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(15, 23, 42, 0.8) 50%, rgba(59, 130, 246, 0.06) 100%)',
+    border: '1px solid rgba(13, 148, 136, 0.15)',
     borderRadius: '16px',
-    padding: '24px 32px',
+    padding: '22px 28px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     textAlign: 'left',
+    boxShadow: '0 4px 24px -4px rgba(13, 148, 136, 0.08)',
   },
   headerTextContainer: {
     display: 'flex',
@@ -575,12 +576,12 @@ const styles = {
     margin: 0,
   },
   dashboardContainer: {
-    padding: '32px',
-    maxWidth: '1280px',
-    margin: '0 auto',
+    padding: '20px',
+    width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    gap: '32px',
+    gap: '20px',
+    boxSizing: 'border-box',
   },
   statsRow: {
     display: 'grid',
