@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Patient360 } from './pages/Patient360';
+import { RealtimeMonitoringDashboard } from './pages/RealtimeMonitoringDashboard';
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -30,6 +31,7 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/patient/:id" element={<Patient360 />} />
+            <Route path="/monitoring" element={<RealtimeMonitoringDashboard />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>

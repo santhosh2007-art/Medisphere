@@ -75,8 +75,11 @@ export const Sidebar = () => {
         </button>
 
         <button 
-          onClick={() => handleNavClick('vitals', 'vitals')} 
-          style={styles.navLink}
+          onClick={() => navigate('/monitoring')} 
+          style={{ 
+            ...styles.navLink, 
+            ...(location.pathname === '/monitoring' ? styles.navLinkActive : {}) 
+          }}
         >
           <Activity size={18} />
           <span>Monitoring</span>

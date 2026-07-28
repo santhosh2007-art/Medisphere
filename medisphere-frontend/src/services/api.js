@@ -567,5 +567,34 @@ export const api = {
       return { data: { federatedRound: 14, convergenceStatus: 'STABLE' } };
     }
     return client.get('/api/model/status');
+  },
+
+  // MILESTONE 3: REAL-TIME ALERT MONITORING & SIMULATOR
+  getLiveAlerts: async () => {
+    return client.get('/vitals/alerts/live');
+  },
+
+  getAlertMetrics: async () => {
+    return client.get('/vitals/alerts/metrics');
+  },
+
+  acknowledgeAlert: async (id, providerName = 'Dr. Specialist') => {
+    return client.post(`/vitals/alerts/${id}/acknowledge?providerName=${encodeURIComponent(providerName)}`);
+  },
+
+  escalateAlert: async (id) => {
+    return client.post(`/vitals/alerts/${id}/escalate`);
+  },
+
+  contactPatient: async (id) => {
+    return client.post(`/vitals/alerts/${id}/contact`);
+  },
+
+  getNotificationHistory: async () => {
+    return client.get('/vitals/alerts/notifications');
+  },
+
+  triggerPythonAbnormal: async () => {
+    return axios.get('http://localhost:5000/simulate?abnormal=true');
   }
 };
