@@ -10,7 +10,7 @@ export const Login = () => {
   
   // Clinician credentials
   const [username, setUsername] = useState('doctor');
-  const [password, setPassword] = useState('doctor');
+  const [password, setPassword] = useState('');
   
   // Patient Sign In credentials
   const [patientEmail, setPatientEmail] = useState('');
@@ -248,7 +248,7 @@ export const Login = () => {
             {/* Quick Doctor Account Selector */}
             <div style={{ marginBottom: '20px', textAlign: 'left' }}>
               <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
-                SELECT DOCTOR ACCOUNT (Password: "doctor"):
+                SELECT DOCTOR ACCOUNT:
               </span>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <button
@@ -263,7 +263,7 @@ export const Login = () => {
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
-                  onClick={() => { setUsername('sarahjenkins'); setPassword('doctor'); }}
+                  onClick={() => { setUsername('sarahjenkins'); setPassword(''); }}
                 >
                   <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Sarah Jenkins</strong>
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🫀 Cardiologist (CARDIAC)</span>
@@ -281,7 +281,7 @@ export const Login = () => {
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
-                  onClick={() => { setUsername('robertchen'); setPassword('doctor'); }}
+                  onClick={() => { setUsername('robertchen'); setPassword(''); }}
                 >
                   <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Robert Chen</strong>
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🫁 Pulmonologist (OXYGEN)</span>
@@ -299,7 +299,7 @@ export const Login = () => {
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
-                  onClick={() => { setUsername('elenarostova'); setPassword('doctor'); }}
+                  onClick={() => { setUsername('elenarostova'); setPassword(''); }}
                 >
                   <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Elena Rostova</strong>
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🩺 Gen Physician (BP)</span>
@@ -317,7 +317,7 @@ export const Login = () => {
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
-                  onClick={() => { setUsername('doctor'); setPassword('doctor'); }}
+                  onClick={() => { setUsername('doctor'); setPassword(''); }}
                 >
                   <strong style={{ display: 'block', color: '#2dd4bf' }}>Common Doctor</strong>
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🏥 All Patients & Alerts</span>
