@@ -24,7 +24,7 @@ export const RealtimeMonitoringDashboard = () => {
 
   useEffect(() => {
     fetchLiveData();
-    const interval = setInterval(fetchLiveData, 3000);
+    const interval = setInterval(fetchLiveData, 10000);
     return () => clearInterval(interval);
   }, []);
 

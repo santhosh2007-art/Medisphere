@@ -22,10 +22,10 @@ public class VitalsPollerScheduler {
     private final RestTemplate restTemplate = new RestTemplate();
 
     /**
-     * Periodically polls the Python Vital Simulator REST API every 3 seconds.
+     * Periodically polls the Python Vital Simulator REST API every 10 seconds.
      * Validates vital ranges and forwards valid telemetry to Kafka `vitals-stream`.
      */
-    @Scheduled(fixedRate = 3000)
+    @Scheduled(fixedRate = 10000)
     public void pollPythonVitalSimulator() {
         try {
             VitalSimulatorDTO[] vitalsArray = restTemplate.getForObject(PYTHON_SIMULATOR_URL, VitalSimulatorDTO[].class);
