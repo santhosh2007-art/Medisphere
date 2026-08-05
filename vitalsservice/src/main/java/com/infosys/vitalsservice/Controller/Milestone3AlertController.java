@@ -3,7 +3,10 @@ package com.infosys.vitalsservice.Controller;
 import com.infosys.vitalsservice.Entity.Alert;
 import com.infosys.vitalsservice.Service.AlertService;
 import com.infosys.vitalsservice.Service.NotificationService;
+import com.infosys.vitalsservice.Service.AnomalyDetectionEngine;
+import com.infosys.vitalsservice.dto.AnomalyEventDTO;
 import com.infosys.vitalsservice.dto.DashboardMetricsDTO;
+import com.infosys.vitalsservice.dto.VitalSimulatorDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,9 +26,32 @@ public class Milestone3AlertController {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private AnomalyDetectionEngine anomalyDetectionEngine;
+
     @GetMapping("/live")
     public ResponseEntity<List<Alert>> getLiveAlerts() {
         return ResponseEntity.ok(alertService.getRecentAlerts());
+    }
+
+    @PostMapping("/trigger-abnormal")
+    public ResponseEntity<Alert> triggerAbnormalAlert() {
+        VitalSimulatorDTO vitals = new VitalSimulatorDTO();
+        vitals.setPatientId("35f51e3e-66fd-4f87-85ad-affa0dde1156");
+        vitals.setName("Santhosh Kumar");
+        vitals.setHeartRate(158);
+        vitals.setSystolicBp(185);
+        vitals.setDiastolicBp(112);
+        vitals.setBloodPressure("185/112");
+        vitals.setSpO2(84.5);
+        vitals.setBodyTemperature(39.5);
+        vitals.setBloodSugar(165.0);
+        vitals.setActivityState("REST");
+        vitals.setIsAbnormal(true);
+
+        AnomalyEventDTO anomaly = anomalyDetectionEngine.evaluateVitals(vitals);
+        Alert created = alertService.processAnomalyDirect(anomaly);
+        return ResponseEntity.ok(created);
     }
 
     @GetMapping("/active")

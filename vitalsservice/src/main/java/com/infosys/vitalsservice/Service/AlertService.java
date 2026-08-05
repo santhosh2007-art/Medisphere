@@ -81,6 +81,37 @@ public class AlertService {
         return saved;
     }
 
+    public Alert processAnomalyDirect(AnomalyEventDTO anomaly) {
+        if (anomaly == null) return null;
+
+        AlertRoutingService.DoctorAssignment doctor = alertRoutingService.routeDoctor(anomaly.getAlertType());
+
+        Alert alert = new Alert();
+        alert.setPatientId(anomaly.getPatientId());
+        alert.setPatientName(anomaly.getPatientName());
+        alert.setAlertType(anomaly.getAlertType());
+        alert.setSeverity(anomaly.getSeverity());
+        alert.setAiConfidence(anomaly.getAiConfidence());
+        alert.setAlertMessage(anomaly.getRuleTriggered());
+        alert.setAssignedDoctor(doctor.getDoctorName());
+        alert.setDoctorRole(doctor.getRole());
+        alert.setStatus("ACTIVE");
+        alert.setCreatedTime(new Date());
+        alert.setAcknowledged(false);
+        alert.setEscalated(false);
+
+        VitalSimulatorDTO vitals = anomaly.getVitals();
+        if (vitals != null) {
+            alert.setHeartRate(vitals.getHeartRate());
+            alert.setSpO2(vitals.getSpO2());
+            alert.setBodyTemperature(vitals.getBodyTemperature());
+            alert.setBloodPressure(vitals.getBloodPressure());
+            alert.setActivityState(vitals.getActivityState());
+        }
+
+        return alertRepository.save(alert);
+    }
+
     public Alert acknowledgeAlert(String alertId, String providerName) {
         Alert alert = alertRepository.findById(alertId)
                 .orElseThrow(() -> new RuntimeException("Alert not found with ID: " + alertId));
