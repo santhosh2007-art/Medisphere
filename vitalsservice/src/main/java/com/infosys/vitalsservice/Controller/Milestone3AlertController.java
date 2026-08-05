@@ -77,6 +77,20 @@ public class Milestone3AlertController {
         return ResponseEntity.ok(updated);
     }
 
+    @PostMapping("/{id}/visit")
+    public ResponseEntity<Alert> markDoctorVisited(
+            @PathVariable String id,
+            @RequestParam(required = false, defaultValue = "Dr. Specialist") String doctorName) {
+        Alert updated = alertService.markDoctorVisited(id, doctorName);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{id}/disable")
+    public ResponseEntity<Alert> disableAlert(@PathVariable String id) {
+        Alert updated = alertService.disableAlert(id);
+        return ResponseEntity.ok(updated);
+    }
+
     @PostMapping("/{id}/escalate")
     public ResponseEntity<Alert> escalateAlert(@PathVariable String id) {
         Alert updated = alertService.escalateAlert(id);

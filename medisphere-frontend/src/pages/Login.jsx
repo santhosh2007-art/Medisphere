@@ -245,6 +245,86 @@ export const Login = () => {
               />
             </div>
 
+            {/* Quick Doctor Account Selector */}
+            <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
+                SELECT DOCTOR ACCOUNT (Password: "doctor"):
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: username === 'sarahjenkins' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.6)',
+                    border: `1px solid ${username === 'sarahjenkins' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
+                    color: '#fff',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                  onClick={() => { setUsername('sarahjenkins'); setPassword('doctor'); }}
+                >
+                  <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Sarah Jenkins</strong>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🫀 Cardiologist (CARDIAC)</span>
+                </button>
+
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: username === 'robertchen' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.6)',
+                    border: `1px solid ${username === 'robertchen' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
+                    color: '#fff',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                  onClick={() => { setUsername('robertchen'); setPassword('doctor'); }}
+                >
+                  <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Robert Chen</strong>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🫁 Pulmonologist (OXYGEN)</span>
+                </button>
+
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: username === 'elenarostova' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.6)',
+                    border: `1px solid ${username === 'elenarostova' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
+                    color: '#fff',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                  onClick={() => { setUsername('elenarostova'); setPassword('doctor'); }}
+                >
+                  <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Elena Rostova</strong>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🩺 Gen Physician (BP)</span>
+                </button>
+
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: username === 'doctor' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.6)',
+                    border: `1px solid ${username === 'doctor' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
+                    color: '#fff',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                  onClick={() => { setUsername('doctor'); setPassword('doctor'); }}
+                >
+                  <strong style={{ display: 'block', color: '#2dd4bf' }}>Common Doctor</strong>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🏥 All Patients & Alerts</span>
+                </button>
+              </div>
+            </div>
+
             <button
               type="submit"
               className="btn btn-primary"

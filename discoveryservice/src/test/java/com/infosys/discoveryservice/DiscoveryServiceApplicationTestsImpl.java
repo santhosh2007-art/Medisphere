@@ -1,4 +1,4 @@
 package com.infosys.discoveryservice;
 
-public class DiscoveryServiceApplicationTestsImpl {
+public class DiscoveryServiceApplicationTestsImpl extends DiscoveryServiceApplicationTests {
 }

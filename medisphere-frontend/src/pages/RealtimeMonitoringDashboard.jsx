@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { 
   Activity, AlertTriangle, CheckCircle, ShieldAlert, Zap, PhoneCall, 
-  RefreshCw, Cpu, UserCheck, Clock, ShieldCheck, Info, Radio, AlertOctagon
+  RefreshCw, Cpu, UserCheck, Clock, ShieldCheck, Info, Radio, AlertOctagon, User, Eye, Ban
 } from 'lucide-react';
 
 export const RealtimeMonitoringDashboard = () => {
+  const { user } = useAuth();
   const [alerts, setAlerts] = useState([]);
   const [metrics, setMetrics] = useState({
-    alertsToday: 12,
+    alertsToday: 3,
     wearablesOnline: 3,
     avgResponseTime: '1.8 min',
     activeAlerts: 2,
@@ -26,7 +28,7 @@ export const RealtimeMonitoringDashboard = () => {
     fetchLiveData();
     const interval = setInterval(fetchLiveData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const fetchLiveData = async () => {
     try {
@@ -63,10 +65,34 @@ export const RealtimeMonitoringDashboard = () => {
   const handleAcknowledge = async (alertId) => {
     setActionLoading(alertId);
     try {
-      await api.acknowledgeAlert(alertId, 'Dr. Specialist');
+      await api.acknowledgeAlert(alertId, user?.name || 'Dr. Specialist');
       await fetchLiveData();
     } catch (err) {
       console.error('Error acknowledging alert:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleMarkVisited = async (alertId) => {
+    setActionLoading(alertId);
+    try {
+      await api.markDoctorVisited(alertId, user?.name || 'Dr. Specialist');
+      await fetchLiveData();
+    } catch (err) {
+      console.error('Error marking doctor visited:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDisableAlert = async (alertId) => {
+    setActionLoading(alertId);
+    try {
+      await api.disableAlert(alertId);
+      await fetchLiveData();
+    } catch (err) {
+      console.error('Error disabling alert:', err);
     } finally {
       setActionLoading(null);
     }
@@ -115,18 +141,42 @@ export const RealtimeMonitoringDashboard = () => {
     }
   };
 
+  // Filter alerts by Doctor Specialty
+  const userSpecialty = user?.specialty || 'ALL';
+  const filteredAlerts = alerts.filter(a => {
+    if (userSpecialty === 'ALL') return true;
+    return a.alertType === userSpecialty || (a.assignedDoctor && a.assignedDoctor.includes(user?.name));
+  });
+
+  const activeCountForUser = filteredAlerts.filter(a => a.status === 'ACTIVE').length;
+
   return (
     <div style={styles.container}>
+      {/* DOCTOR LOGGED-IN SPECIALTY BAR */}
+      <div style={styles.doctorHeaderBanner}>
+        <UserCheck size={20} color="#10b981" />
+        <div>
+          <strong style={{ fontSize: '1rem', color: '#fff' }}>
+            Logged In Doctor Workspace: {user?.name || 'Dr. Specialist'} ({user?.specialtyLabel || 'All Specialties'})
+          </strong>
+          <span style={{ display: 'block', fontSize: '0.82rem', color: '#94a3b8', marginTop: '2px' }}>
+            {userSpecialty === 'ALL' 
+              ? 'Showing ALL patient alerts across all hospital departments.'
+              : `Filtered View: Showing ONLY ${userSpecialty} department alerts assigned to ${user?.name}.`}
+          </span>
+        </div>
+      </div>
+
       {/* 1. HEADER CONTROL BAR */}
       <div className="glass-card" style={styles.headerBar}>
         <div style={styles.headerTitleGroup}>
           <div style={styles.pulseBadge}>
             <Radio size={16} color="#10b981" />
-            <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 'bold' }}>LIVE STREAMING</span>
+            <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 'bold' }}>LIVE STREAMING (10s CYCLE)</span>
           </div>
           <h2 style={styles.headerTitle}>Wearable Real-Time Alert & Clinical Monitoring HUD</h2>
           <p style={styles.headerSubtitle}>
-            Milestone 3 Student Demonstration — Continuous Python Sensor Ingestion, Kafka Topics, Anomaly Rules & Provider Routing.
+            Milestone 3 Student Demonstration — Continuous Python Sensor Ingestion, Kafka Topics, Doctor Specialty Filtering & Auto-Disabling (30m Rule).
           </p>
         </div>
         <div style={styles.headerActions}>
@@ -164,7 +214,7 @@ export const RealtimeMonitoringDashboard = () => {
           </div>
           <div style={styles.metricInfo}>
             <span style={styles.metricLabel}>Alerts Today</span>
-            <span style={styles.metricValue}>{metrics.alertsToday}</span>
+            <span style={styles.metricValue}>{filteredAlerts.length}</span>
           </div>
         </div>
 
@@ -194,7 +244,7 @@ export const RealtimeMonitoringDashboard = () => {
           </div>
           <div style={styles.metricInfo}>
             <span style={styles.metricLabel}>Active Alerts</span>
-            <span style={styles.metricValue}>{metrics.activeAlerts}</span>
+            <span style={styles.metricValue}>{activeCountForUser}</span>
           </div>
         </div>
 
@@ -224,10 +274,10 @@ export const RealtimeMonitoringDashboard = () => {
         <div style={styles.tableHeader}>
           <h3 style={styles.tableTitle}>
             <ShieldAlert size={20} color="#f43f5e" />
-            <span>Live Clinical Alert Stream (Kafka: alert-created)</span>
+            <span>Live Clinical Alert Stream ({userSpecialty} Specialty Feed)</span>
           </h3>
           <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-            5-Min Fatigue Suppressor Active • Provider Auto-Routing Enabled
+            5-Min Fatigue Suppressor Active • 30-Min Post-Visit Auto-Disable Active
           </span>
         </div>
 
@@ -241,19 +291,20 @@ export const RealtimeMonitoringDashboard = () => {
                 <th>AI Confidence</th>
                 <th>Rule Message</th>
                 <th>Assigned Specialist</th>
-                <th>Status</th>
+                <th>Doctor Visit Status</th>
+                <th>Alert Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {alerts.length === 0 ? (
+              {filteredAlerts.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
-                    No alerts in stream right now. Click "Trigger Abnormal Sensor Vital" to test.
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                    No active {userSpecialty !== 'ALL' ? userSpecialty : ''} alerts currently in stream. Click "Trigger Abnormal Sensor Vital" to test live alerts.
                   </td>
                 </tr>
               ) : (
-                alerts.map(a => (
+                filteredAlerts.map(a => (
                   <tr key={a.id}>
                     <td>
                       <span className={`badge ${getSeverityBadgeClass(a.severity)}`}>
@@ -278,6 +329,11 @@ export const RealtimeMonitoringDashboard = () => {
                       {a.assignedDoctor}
                     </td>
                     <td>
+                      <span style={styles.visitBadge(a.doctorVisitStatus)}>
+                        {a.doctorVisitStatus === 'VISITED' ? `Visited (${a.visitedBy || 'Doctor'})` : (a.doctorVisitStatus || 'PENDING')}
+                      </span>
+                    </td>
+                    <td>
                       <span style={styles.statusBadge(a.status)}>
                         {a.status}
                       </span>
@@ -291,20 +347,43 @@ export const RealtimeMonitoringDashboard = () => {
                             disabled={actionLoading === a.id}
                             title="Acknowledge Alert"
                           >
-                            <CheckCircle size={14} />
+                            <CheckCircle size={13} />
                             <span>Ack</span>
                           </button>
                         )}
 
-                        {a.status !== 'ESCALATED' && (
+                        {a.doctorVisitStatus !== 'VISITED' && a.doctorVisitStatus !== 'DISABLED' && (
+                          <button
+                            className="btn btn-primary btn-small"
+                            onClick={() => handleMarkVisited(a.id)}
+                            disabled={actionLoading === a.id}
+                            title="Mark Doctor Visited Patient"
+                          >
+                            <UserCheck size={13} />
+                            <span>Mark Visited</span>
+                          </button>
+                        )}
+
+                        {a.status !== 'DISABLED' && (
+                          <button
+                            className="btn btn-secondary btn-small"
+                            onClick={() => handleDisableAlert(a.id)}
+                            disabled={actionLoading === a.id}
+                            title="Disable Alert (30-min rule trigger)"
+                          >
+                            <Ban size={13} color="#94a3b8" />
+                            <span>Disable</span>
+                          </button>
+                        )}
+
+                        {a.status !== 'ESCALATED' && a.status !== 'DISABLED' && (
                           <button
                             className="btn btn-danger btn-small"
                             onClick={() => handleEscalate(a.id)}
                             disabled={actionLoading === a.id}
                             title="Escalate Alert"
                           >
-                            <AlertTriangle size={14} />
-                            <span>Escalate</span>
+                            <AlertTriangle size={13} />
                           </button>
                         )}
 
@@ -314,8 +393,7 @@ export const RealtimeMonitoringDashboard = () => {
                           disabled={actionLoading === a.id}
                           title="Contact Patient via Telehealth"
                         >
-                          <PhoneCall size={14} />
-                          <span>Contact</span>
+                          <PhoneCall size={13} />
                         </button>
 
                         <button
@@ -323,7 +401,7 @@ export const RealtimeMonitoringDashboard = () => {
                           onClick={() => setSelectedAlert(a)}
                           title="View Details"
                         >
-                          <Info size={14} />
+                          <Info size={13} />
                         </button>
                       </div>
                     </td>
@@ -520,6 +598,16 @@ const styles = {
     gap: '8px',
     margin: 0,
   },
+  doctorHeaderBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    background: 'rgba(16, 185, 129, 0.12)',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    borderRadius: '12px',
+    padding: '14px 20px',
+    textAlign: 'left',
+  },
   actionBtnGroup: {
     display: 'flex',
     gap: '6px',
@@ -533,14 +621,23 @@ const styles = {
     color: '#38bdf8',
     border: '1px solid rgba(59, 130, 246, 0.2)',
   }),
+  visitBadge: (vStatus) => ({
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    padding: '3px 8px',
+    borderRadius: '6px',
+    background: vStatus === 'VISITED' ? 'rgba(16, 185, 129, 0.15)' : vStatus === 'DISABLED' ? 'rgba(148, 163, 184, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+    color: vStatus === 'VISITED' ? '#10b981' : vStatus === 'DISABLED' ? '#94a3b8' : '#f59e0b',
+    border: `1px solid ${vStatus === 'VISITED' ? 'rgba(16, 185, 129, 0.3)' : vStatus === 'DISABLED' ? 'rgba(148, 163, 184, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+  }),
   statusBadge: (status) => ({
     fontSize: '0.75rem',
     fontWeight: '700',
     padding: '3px 8px',
     borderRadius: '6px',
-    background: status === 'ACTIVE' ? 'rgba(244, 63, 94, 0.1)' : status === 'ACKNOWLEDGED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-    color: status === 'ACTIVE' ? '#f43f5e' : status === 'ACKNOWLEDGED' ? '#10b981' : '#f59e0b',
-    border: `1px solid ${status === 'ACTIVE' ? 'rgba(244, 63, 94, 0.2)' : status === 'ACKNOWLEDGED' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`,
+    background: status === 'ACTIVE' ? 'rgba(244, 63, 94, 0.1)' : status === 'ACKNOWLEDGED' ? 'rgba(16, 185, 129, 0.1)' : status === 'DISABLED' ? 'rgba(148, 163, 184, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+    color: status === 'ACTIVE' ? '#f43f5e' : status === 'ACKNOWLEDGED' ? '#10b981' : status === 'DISABLED' ? '#94a3b8' : '#f59e0b',
+    border: `1px solid ${status === 'ACTIVE' ? 'rgba(244, 63, 94, 0.2)' : status === 'ACKNOWLEDGED' ? 'rgba(16, 185, 129, 0.2)' : status === 'DISABLED' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`,
   }),
   modalOverlay: {
     position: 'fixed',

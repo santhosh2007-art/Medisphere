@@ -6,6 +6,8 @@ from flask import Flask, jsonify, request
 app = Flask(__name__)
 
 # Monitored Student Project Patients Baseline
+DEFAULT_PATIENT_ID = "35f51e3e-66fd-4f87-85ad-affa0dde1156"
+
 PATIENTS = [
     {
         "patientId": "35f51e3e-66fd-4f87-85ad-affa0dde1156",
@@ -156,7 +158,7 @@ def simulate_vitals():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print(" 🐍 MEDISPHERE PYTHON VITAL SIMULATOR API (Milestone 3)")
+    print(" MEDISPHERE PYTHON VITAL SIMULATOR API (Milestone 3)")
     print(" Running on http://localhost:5000")
     print(" Endpoints: /vitals | /patients | /simulate")
     print("=" * 60)

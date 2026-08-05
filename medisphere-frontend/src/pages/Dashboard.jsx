@@ -194,11 +194,30 @@ export const Dashboard = () => {
     }
   };
 
+  const userSpecialty = user?.specialty || 'ALL';
+
   const filteredPatients = patients.filter(p => {
     const fullName = `${p.firstname} ${p.lastname}`.toLowerCase();
-    const email = p.email.toLowerCase();
+    const email = (p.email || '').toLowerCase();
     const query = searchQuery.toLowerCase();
-    return fullName.includes(query) || email.includes(query);
+
+    const matchesSearch = fullName.includes(query) || email.includes(query);
+    if (!matchesSearch) return false;
+
+    // Specialty Filtering
+    if (userSpecialty === 'ALL') return true;
+
+    if (userSpecialty === 'CARDIAC') {
+      return fullName.includes('santhosh') || p.patientId === '35f51e3e-66fd-4f87-85ad-affa0dde1156' || (p.disease && p.disease.toUpperCase().includes('CARD'));
+    }
+    if (userSpecialty === 'OXYGEN') {
+      return fullName.includes('anitha') || p.patientId === '8a719c2d-12ef-45a8-912b-34567890abcd' || (p.disease && (p.disease.toUpperCase().includes('ASTHMA') || p.disease.toUpperCase().includes('LUNG') || p.disease.toUpperCase().includes('OXY')));
+    }
+    if (userSpecialty === 'BLOOD_PRESSURE') {
+      return fullName.includes('rajesh') || p.patientId === '9b820d3e-23fa-56b9-923c-45678901bcde' || (p.disease && (p.disease.toUpperCase().includes('HYPER') || p.disease.toUpperCase().includes('PRESS') || p.disease.toUpperCase().includes('DIAB')));
+    }
+
+    return true;
   });
 
   return (

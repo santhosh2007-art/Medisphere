@@ -582,6 +582,14 @@ export const api = {
     return client.post(`/vitals/alerts/${id}/acknowledge?providerName=${encodeURIComponent(providerName)}`);
   },
 
+  markDoctorVisited: async (id, doctorName = 'Dr. Specialist') => {
+    return client.post(`/vitals/alerts/${id}/visit?doctorName=${encodeURIComponent(doctorName)}`);
+  },
+
+  disableAlert: async (id) => {
+    return client.post(`/vitals/alerts/${id}/disable`);
+  },
+
   escalateAlert: async (id) => {
     return client.post(`/vitals/alerts/${id}/escalate`);
   },

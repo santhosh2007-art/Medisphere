@@ -18,7 +18,11 @@ public class Alert {
     private String alertMessage;
     private String assignedDoctor; // e.g., Dr. Sarah Jenkins (Cardiologist)
     private String doctorRole;     // Cardiologist, Pulmonologist, etc.
-    private String status;         // ACTIVE, ACKNOWLEDGED, ESCALATED
+    private String status;         // ACTIVE, ACKNOWLEDGED, ESCALATED, DISABLED
+    private String doctorVisitStatus = "PENDING"; // PENDING, VISITED, DISABLED
+    private String visitedBy;
+    private Date visitedTime;
+    private Date disabledTime;
     private Date createdTime;
     private Boolean acknowledged = false;
     private String acknowledgedBy;
@@ -36,6 +40,7 @@ public class Alert {
     public Alert() {
         this.createdTime = new Date();
         this.status = "ACTIVE";
+        this.doctorVisitStatus = "PENDING";
     }
 
     public String getId() {
@@ -204,5 +209,37 @@ public class Alert {
 
     public void setActivityState(String activityState) {
         this.activityState = activityState;
+    }
+
+    public String getDoctorVisitStatus() {
+        return doctorVisitStatus;
+    }
+
+    public void setDoctorVisitStatus(String doctorVisitStatus) {
+        this.doctorVisitStatus = doctorVisitStatus;
+    }
+
+    public String getVisitedBy() {
+        return visitedBy;
+    }
+
+    public void setVisitedBy(String visitedBy) {
+        this.visitedBy = visitedBy;
+    }
+
+    public Date getVisitedTime() {
+        return visitedTime;
+    }
+
+    public void setVisitedTime(Date visitedTime) {
+        this.visitedTime = visitedTime;
+    }
+
+    public Date getDisabledTime() {
+        return disabledTime;
+    }
+
+    public void setDisabledTime(Date disabledTime) {
+        this.disabledTime = disabledTime;
     }
 }

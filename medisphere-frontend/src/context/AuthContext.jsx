@@ -27,27 +27,84 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (username, password, role = 'PROVIDER', patientId = null, patientName = '') => {
+  const login = async (usernameInput, password, role = 'PROVIDER', patientId = null, patientName = '') => {
     setLoading(true);
     setError(null);
     try {
       let loggedInUser;
       if (role === 'PATIENT') {
         loggedInUser = {
-          username: username || 'patient_user',
+          username: usernameInput || 'patient_user',
           roles: ['PATIENT'],
           name: patientName || 'Patient User',
-          patientId: patientId
+          patientId: patientId,
+          specialty: 'ALL'
         };
       } else {
-        if (username !== 'doctor' || password !== 'doctor') {
-          throw new Error('Invalid clinician credentials. Use username "doctor" and password "doctor".');
+        const cleanUser = (usernameInput || '').trim().toLowerCase();
+        
+        if (password !== 'doctor') {
+          throw new Error('Invalid password. Password for all doctor accounts is "doctor".');
         }
-        loggedInUser = {
-          username: username,
-          roles: ['PROVIDER', 'CLINICIAN'],
-          name: 'Dr. Specialist'
+
+        const DOCTOR_MAP = {
+          sarahjenkins: {
+            username: 'sarahjenkins',
+            name: 'Dr. Sarah Jenkins',
+            specialty: 'CARDIAC',
+            specialtyLabel: 'Cardiologist',
+            roles: ['PROVIDER', 'CLINICIAN']
+          },
+          sarah: {
+            username: 'sarahjenkins',
+            name: 'Dr. Sarah Jenkins',
+            specialty: 'CARDIAC',
+            specialtyLabel: 'Cardiologist',
+            roles: ['PROVIDER', 'CLINICIAN']
+          },
+          robertchen: {
+            username: 'robertchen',
+            name: 'Dr. Robert Chen',
+            specialty: 'OXYGEN',
+            specialtyLabel: 'Pulmonologist',
+            roles: ['PROVIDER', 'CLINICIAN']
+          },
+          robert: {
+            username: 'robertchen',
+            name: 'Dr. Robert Chen',
+            specialty: 'OXYGEN',
+            specialtyLabel: 'Pulmonologist',
+            roles: ['PROVIDER', 'CLINICIAN']
+          },
+          elenarostova: {
+            username: 'elenarostova',
+            name: 'Dr. Elena Rostova',
+            specialty: 'BLOOD_PRESSURE',
+            specialtyLabel: 'General Physician',
+            roles: ['PROVIDER', 'CLINICIAN']
+          },
+          elena: {
+            username: 'elenarostova',
+            name: 'Dr. Elena Rostova',
+            specialty: 'BLOOD_PRESSURE',
+            specialtyLabel: 'General Physician',
+            roles: ['PROVIDER', 'CLINICIAN']
+          },
+          doctor: {
+            username: 'doctor',
+            name: 'Dr. Specialist (All Patients)',
+            specialty: 'ALL',
+            specialtyLabel: 'General Practice (All Patients)',
+            roles: ['PROVIDER', 'CLINICIAN']
+          }
         };
+
+        const docConfig = DOCTOR_MAP[cleanUser];
+        if (!docConfig) {
+          throw new Error('Invalid clinician username. Valid accounts: sarahjenkins, robertchen, elenarostova, doctor (Password: doctor).');
+        }
+
+        loggedInUser = docConfig;
       }
 
       localStorage.setItem('medisphere_sandbox', 'false');

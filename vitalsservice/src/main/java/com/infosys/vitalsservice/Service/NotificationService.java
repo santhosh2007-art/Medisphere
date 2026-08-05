@@ -71,4 +71,29 @@ public class NotificationService {
             }
         }
     }
+
+    /**
+     * Background Scheduler: Runs every 30 seconds to check for Doctor Visited alerts.
+     * Automatically disables alerts 30 minutes after Doctor Visit.
+     */
+    @Scheduled(fixedRate = 30000)
+    public void checkDoctorVisitedAlertsForAutoDisable() {
+        // 30 minutes ago threshold
+        Date thirtyMinsAgo = new Date(System.currentTimeMillis() - (30 * 60 * 1000));
+        List<Alert> allAlerts = alertRepository.findAll();
+
+        if (allAlerts != null && !allAlerts.isEmpty()) {
+            for (Alert alert : allAlerts) {
+                if ("VISITED".equals(alert.getDoctorVisitStatus()) && alert.getVisitedTime() != null && alert.getVisitedTime().before(thirtyMinsAgo)) {
+                    alert.setStatus("DISABLED");
+                    alert.setDoctorVisitStatus("DISABLED");
+                    alert.setDisabledTime(new Date());
+                    alertRepository.save(alert);
+
+                    logger.info("⏸️ [30-MIN AUTO-DISABLE] Alert ID {} auto-disabled 30 minutes after doctor visit by {}",
+                            alert.getId(), alert.getVisitedBy());
+                }
+            }
+        }
+    }
 }
