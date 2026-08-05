@@ -571,39 +571,46 @@ export const api = {
 
   // MILESTONE 3: REAL-TIME ALERT MONITORING & SIMULATOR
   getLiveAlerts: async () => {
-    return client.get('/vitals/alerts/live');
+    return client.get('/vitals/alerts/live').catch(() => axios.get('http://localhost:8083/vitals/alerts/live'));
   },
 
   getAlertMetrics: async () => {
-    return client.get('/vitals/alerts/metrics');
+    return client.get('/vitals/alerts/metrics').catch(() => axios.get('http://localhost:8083/vitals/alerts/metrics'));
   },
 
   acknowledgeAlert: async (id, providerName = 'Dr. Specialist') => {
-    return client.post(`/vitals/alerts/${id}/acknowledge?providerName=${encodeURIComponent(providerName)}`);
+    const url = `/vitals/alerts/${id}/acknowledge?providerName=${encodeURIComponent(providerName)}`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
   },
 
   markDoctorVisited: async (id, doctorName = 'Dr. Specialist') => {
-    return client.post(`/vitals/alerts/${id}/visit?doctorName=${encodeURIComponent(doctorName)}`);
+    const url = `/vitals/alerts/${id}/visit?doctorName=${encodeURIComponent(doctorName)}`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
   },
 
   disableAlert: async (id) => {
-    return client.post(`/vitals/alerts/${id}/disable`);
+    const url = `/vitals/alerts/${id}/disable`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
   },
 
   escalateAlert: async (id) => {
-    return client.post(`/vitals/alerts/${id}/escalate`);
+    const url = `/vitals/alerts/${id}/escalate`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
   },
 
   contactPatient: async (id) => {
-    return client.post(`/vitals/alerts/${id}/contact`);
+    const url = `/vitals/alerts/${id}/contact`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
   },
 
   getNotificationHistory: async () => {
-    return client.get('/vitals/alerts/notifications');
+    return client.get('/vitals/alerts/notifications').catch(() => axios.get('http://localhost:8083/vitals/alerts/notifications'));
   },
 
   triggerPythonAbnormal: async (specialty = 'CARDIAC') => {
-    return client.post(`/vitals/alerts/trigger-abnormal?specialty=${encodeURIComponent(specialty)}`)
+    const url = `/vitals/alerts/trigger-abnormal?specialty=${encodeURIComponent(specialty)}`;
+    return client.post(url)
+      .catch(() => axios.post(`http://localhost:8083${url}`))
       .catch(() => axios.get('http://localhost:5000/simulate?abnormal=true'));
   }
 };
