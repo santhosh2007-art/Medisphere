@@ -180,66 +180,76 @@ public class AlertService {
     }
 
     private void seedInitialDemoAlertsIfEmpty() {
-        if (alertRepository.count() >= 3) return;
+        long activeCount = alertRepository.countByStatus("ACTIVE");
+        if (activeCount >= 3) return;
 
-        // 1. CARDIAC Alert for Dr. Sarah Jenkins
-        Alert a1 = new Alert();
-        a1.setPatientId("35f51e3e-66fd-4f87-85ad-affa0dde1156");
-        a1.setPatientName("Santhosh Kumar");
-        a1.setAlertType("CARDIAC");
-        a1.setSeverity("CRITICAL");
-        a1.setAiConfidence(94.2);
-        a1.setAlertMessage("Resting Tachycardia: Heart rate 158 bpm during REST");
-        a1.setAssignedDoctor("Dr. Sarah Jenkins (Cardiologist)");
-        a1.setDoctorRole("Cardiologist");
-        a1.setStatus("ACTIVE");
-        a1.setDoctorVisitStatus("PENDING");
-        a1.setHeartRate(158);
-        a1.setSpO2(95.0);
-        a1.setBodyTemperature(37.2);
-        a1.setBloodPressure("142/90");
-        a1.setActivityState("REST");
-        alertRepository.save(a1);
+        // Ensure CARDIAC active alert exists
+        if (alertRepository.findByPatientIdOrderByCreatedTimeDesc("35f51e3e-66fd-4f87-85ad-affa0dde1156").isEmpty()) {
+            Alert a1 = new Alert();
+            a1.setPatientId("35f51e3e-66fd-4f87-85ad-affa0dde1156");
+            a1.setPatientName("Santhosh Kumar");
+            a1.setAlertType("CARDIAC");
+            a1.setSeverity("HIGH");
+            a1.setAiConfidence(94.2);
+            a1.setAlertMessage("High Heart Rate Breach: HR > 130 bpm (158 bpm)");
+            a1.setAssignedDoctor("Dr. Sarah Jenkins (Cardiologist)");
+            a1.setDoctorRole("Cardiologist");
+            a1.setStatus("ACTIVE");
+            a1.setDoctorVisitStatus("PENDING");
+            a1.setHeartRate(158);
+            a1.setSpO2(95.0);
+            a1.setBodyTemperature(37.2);
+            a1.setBloodPressure("142/90");
+            a1.setActivityState("REST");
+            a1.setCreatedTime(new Date());
+            alertRepository.save(a1);
+        }
 
-        // 2. OXYGEN Alert for Dr. Robert Chen
-        Alert a2 = new Alert();
-        a2.setPatientId("8a719c2d-12ef-45a8-912b-34567890abcd");
-        a2.setPatientName("Anitha Ramesh");
-        a2.setAlertType("OXYGEN");
-        a2.setSeverity("CRITICAL");
-        a2.setAiConfidence(92.8);
-        a2.setAlertMessage("Oxygen Desaturation: SpO2 dipped to 84.5%");
-        a2.setAssignedDoctor("Dr. Robert Chen (Pulmonologist)");
-        a2.setDoctorRole("Pulmonologist");
-        a2.setStatus("ACTIVE");
-        a2.setDoctorVisitStatus("PENDING");
-        a2.setHeartRate(108);
-        a2.setSpO2(84.5);
-        a2.setBodyTemperature(36.9);
-        a2.setBloodPressure("128/82");
-        a2.setActivityState("WALKING");
-        alertRepository.save(a2);
+        // Ensure OXYGEN active alert exists
+        if (alertRepository.findByPatientIdOrderByCreatedTimeDesc("8a719c2d-12ef-45a8-912b-34567890abcd").isEmpty()) {
+            Alert a2 = new Alert();
+            a2.setPatientId("8a719c2d-12ef-45a8-912b-34567890abcd");
+            a2.setPatientName("Anitha Ramesh");
+            a2.setAlertType("OXYGEN");
+            a2.setSeverity("HIGH");
+            a2.setAiConfidence(92.8);
+            a2.setAlertMessage("Severe Oxygen Desaturation: SpO2 < 90% (84.5%)");
+            a2.setAssignedDoctor("Dr. Robert Chen (Pulmonologist)");
+            a2.setDoctorRole("Pulmonologist");
+            a2.setStatus("ACTIVE");
+            a2.setDoctorVisitStatus("PENDING");
+            a2.setHeartRate(108);
+            a2.setSpO2(84.5);
+            a2.setBodyTemperature(36.9);
+            a2.setBloodPressure("128/82");
+            a2.setActivityState("WALKING");
+            a2.setCreatedTime(new Date());
+            alertRepository.save(a2);
+        }
 
-        // 3. BLOOD_PRESSURE Alert for Dr. Elena Rostova
-        Alert a3 = new Alert();
-        a3.setPatientId("9b820d3e-23fa-56b9-923c-45678901bcde");
-        a3.setPatientName("Rajesh Kannan");
-        a3.setAlertType("BLOOD_PRESSURE");
-        a3.setSeverity("HYPERTENSIVE_CRISIS");
-        a3.setAiConfidence(95.1);
-        a3.setAlertMessage("Hypertensive Elevation: Blood pressure measured 185/112 mmHg");
-        a3.setAssignedDoctor("Dr. Elena Rostova (General Physician)");
-        a3.setDoctorRole("General Physician");
-        a3.setStatus("ACTIVE");
-        a3.setDoctorVisitStatus("PENDING");
-        a3.setHeartRate(115);
-        a3.setSpO2(96.0);
-        a3.setBodyTemperature(37.1);
-        a3.setBloodPressure("185/112");
-        a3.setActivityState("REST");
-        alertRepository.save(a3);
+        // Ensure BLOOD_PRESSURE active alert exists
+        if (alertRepository.findByPatientIdOrderByCreatedTimeDesc("9b820d3e-23fa-56b9-923c-45678901bcde").isEmpty()) {
+            Alert a3 = new Alert();
+            a3.setPatientId("9b820d3e-23fa-56b9-923c-45678901bcde");
+            a3.setPatientName("Rajesh Kannan");
+            a3.setAlertType("BLOOD_PRESSURE");
+            a3.setSeverity("HIGH");
+            a3.setAiConfidence(95.1);
+            a3.setAlertMessage("Hypertensive Elevation Breach: BP > 180/110 mmHg (185/112 mmHg)");
+            a3.setAssignedDoctor("Dr. Elena Rostova (General Physician)");
+            a3.setDoctorRole("General Physician");
+            a3.setStatus("ACTIVE");
+            a3.setDoctorVisitStatus("PENDING");
+            a3.setHeartRate(115);
+            a3.setSpO2(96.0);
+            a3.setBodyTemperature(37.1);
+            a3.setBloodPressure("185/112");
+            a3.setActivityState("REST");
+            a3.setCreatedTime(new Date());
+            alertRepository.save(a3);
+        }
 
-        logger.info("🌱 [DEMO SEED] Initial specialty alerts seeded for Dr. Sarah, Dr. Robert, & Dr. Elena!");
+        logger.info("🌱 [DEMO SEED] Initial active specialty alerts verified for Dr. Sarah, Dr. Robert, & Dr. Elena!");
     }
 
     public DashboardMetricsDTO getDashboardMetrics() {

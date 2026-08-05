@@ -602,7 +602,8 @@ export const api = {
     return client.get('/vitals/alerts/notifications');
   },
 
-  triggerPythonAbnormal: async () => {
-    return axios.get('http://localhost:5000/simulate?abnormal=true');
+  triggerPythonAbnormal: async (specialty = 'CARDIAC') => {
+    return client.post(`/vitals/alerts/trigger-abnormal?specialty=${encodeURIComponent(specialty)}`)
+      .catch(() => axios.get('http://localhost:5000/simulate?abnormal=true'));
   }
 };

@@ -75,18 +75,27 @@ public class Milestone3KafkaPipeline {
     // ── CONSUMERS ──────────────────────────────────────────
 
     @KafkaListener(topics = TOPIC_VITALS_STREAM, groupId = "milestone3-vitals-group")
-    public void consumeVitalsStream(String jsonPayload) {
+    public void consumeVitalsStream(Object payload) {
         try {
-            VitalSimulatorDTO vitals = objectMapper.readValue(jsonPayload, VitalSimulatorDTO.class);
-            logger.info("Kafka [CONSUMER] ← Received vitals-stream for Patient {}", vitals.getPatientId());
+            VitalSimulatorDTO vitals = null;
+            if (payload instanceof String jsonStr) {
+                vitals = objectMapper.readValue(jsonStr, VitalSimulatorDTO.class);
+            } else if (payload != null) {
+                String jsonStr = objectMapper.writeValueAsString(payload);
+                vitals = objectMapper.readValue(jsonStr, VitalSimulatorDTO.class);
+            }
 
-            // Process through Anomaly Detection Engine
-            AnomalyEventDTO anomaly = anomalyDetectionEngine.evaluateVitals(vitals);
-            if (anomaly != null) {
-                logger.warn("⚡ Anomaly/Rule Breach Detected! Patient: {} Alert: {} Severity: {}",
-                        anomaly.getPatientId(), anomaly.getAlertType(), anomaly.getSeverity());
-                // Forward to anomaly-detected topic
-                sendToAnomalyDetected(anomaly);
+            if (vitals != null && vitals.getPatientId() != null) {
+                logger.info("Kafka [CONSUMER] ← Received vitals-stream for Patient {}", vitals.getPatientId());
+
+                // Process through Anomaly Detection Engine
+                AnomalyEventDTO anomaly = anomalyDetectionEngine.evaluateVitals(vitals);
+                if (anomaly != null) {
+                    logger.warn("⚡ Anomaly/Rule Breach Detected! Patient: {} Alert: {} Severity: {}",
+                            anomaly.getPatientId(), anomaly.getAlertType(), anomaly.getSeverity());
+                    // Forward to anomaly-detected topic
+                    sendToAnomalyDetected(anomaly);
+                }
             }
         } catch (Exception e) {
             logger.error("Error processing vitals-stream message: {}", e.getMessage());
@@ -94,16 +103,25 @@ public class Milestone3KafkaPipeline {
     }
 
     @KafkaListener(topics = TOPIC_ANOMALY_DETECTED, groupId = "milestone3-anomaly-group")
-    public void consumeAnomalyDetected(String jsonPayload) {
+    public void consumeAnomalyDetected(Object payload) {
         try {
-            AnomalyEventDTO anomaly = objectMapper.readValue(jsonPayload, AnomalyEventDTO.class);
-            logger.info("Kafka [CONSUMER] ← Received anomaly-detected for Patient {}", anomaly.getPatientId());
+            AnomalyEventDTO anomaly = null;
+            if (payload instanceof String jsonStr) {
+                anomaly = objectMapper.readValue(jsonStr, AnomalyEventDTO.class);
+            } else if (payload != null) {
+                String jsonStr = objectMapper.writeValueAsString(payload);
+                anomaly = objectMapper.readValue(jsonStr, AnomalyEventDTO.class);
+            }
 
-            // Process alert creation & fatigue suppression
-            Alert createdAlert = alertService.processAnomaly(anomaly);
-            if (createdAlert != null) {
-                // Forward to alert-created topic
-                sendToAlertCreated(createdAlert);
+            if (anomaly != null && anomaly.getPatientId() != null) {
+                logger.info("Kafka [CONSUMER] ← Received anomaly-detected for Patient {}", anomaly.getPatientId());
+
+                // Process alert creation & fatigue suppression
+                Alert createdAlert = alertService.processAnomaly(anomaly);
+                if (createdAlert != null) {
+                    // Forward to alert-created topic
+                    sendToAlertCreated(createdAlert);
+                }
             }
         } catch (Exception e) {
             logger.error("Error processing anomaly-detected message: {}", e.getMessage());
@@ -111,13 +129,22 @@ public class Milestone3KafkaPipeline {
     }
 
     @KafkaListener(topics = TOPIC_ALERT_CREATED, groupId = "milestone3-notification-group")
-    public void consumeAlertCreated(String jsonPayload) {
+    public void consumeAlertCreated(Object payload) {
         try {
-            Alert alert = objectMapper.readValue(jsonPayload, Alert.class);
-            logger.info("Kafka [CONSUMER] ← Received alert-created for AlertId {}", alert.getId());
+            Alert alert = null;
+            if (payload instanceof String jsonStr) {
+                alert = objectMapper.readValue(jsonStr, Alert.class);
+            } else if (payload != null) {
+                String jsonStr = objectMapper.writeValueAsString(payload);
+                alert = objectMapper.readValue(jsonStr, Alert.class);
+            }
 
-            // Trigger Notification Service
-            notificationService.handleAlertNotification(alert);
+            if (alert != null && alert.getId() != null) {
+                logger.info("Kafka [CONSUMER] ← Received alert-created for AlertId {}", alert.getId());
+
+                // Trigger Notification Service
+                notificationService.handleAlertNotification(alert);
+            }
         } catch (Exception e) {
             logger.error("Error processing alert-created message: {}", e.getMessage());
         }

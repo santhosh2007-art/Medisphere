@@ -53,7 +53,7 @@ export const RealtimeMonitoringDashboard = () => {
   const handleTriggerAbnormal = async () => {
     setSimulating(true);
     try {
-      await api.triggerPythonAbnormal();
+      await api.triggerPythonAbnormal(userSpecialty);
       await fetchLiveData();
     } catch (err) {
       console.error('Error triggering Python simulator abnormal reading:', err);
