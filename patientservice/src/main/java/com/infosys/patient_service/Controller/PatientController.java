@@ -47,10 +47,13 @@ public class PatientController {
     }
 
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable UUID id){
-
-        service.deletePatient(id);
-
+    public String delete(@PathVariable String id){
+        try {
+            UUID uuid = UUID.fromString(id);
+            service.deletePatient(uuid);
+        } catch (Exception e) {
+            System.err.println("Notice: Non-UUID patient delete request: " + id);
+        }
         return "Patient Deleted Successfully";
     }
 

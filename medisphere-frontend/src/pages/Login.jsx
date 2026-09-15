@@ -5,12 +5,16 @@ import { api } from '../services/api';
 
 export const Login = () => {
   const { login, loading, error: authError } = useAuth();
-  const [role, setRole] = useState('PROVIDER'); // 'PROVIDER' or 'PATIENT'
+  const [role, setRole] = useState('PROVIDER'); // 'PROVIDER' (Doctor), 'PATIENT', or 'ADMIN'
   const [patientTab, setPatientTab] = useState('SIGNIN'); // 'SIGNIN' or 'SIGNUP'
   
   // Clinician credentials
   const [username, setUsername] = useState('doctor');
   const [password, setPassword] = useState('');
+
+  // Admin credentials
+  const [adminId, setAdminId] = useState('admin');
+  const [adminPassword, setAdminPassword] = useState('');
   
   // Patient Sign In credentials
   const [patientEmail, setPatientEmail] = useState('');
@@ -45,6 +49,13 @@ export const Login = () => {
     setLocalError('');
     setLocalSuccess('');
     await login(username, password, 'PROVIDER');
+  };
+
+  const handleAdminSubmit = async (e) => {
+    e.preventDefault();
+    setLocalError('');
+    setLocalSuccess('');
+    await login(adminId, adminPassword, 'ADMIN');
   };
 
   const handlePatientSignIn = async (e) => {
@@ -177,52 +188,61 @@ export const Login = () => {
           <span style={styles.infoText}>Direct MongoDB EHR Connection</span>
         </div>
 
-        {/* Role Switcher */}
+        {/* Role Switcher - 3 Portals matching the slide: Patient (Pt), Doctor (Dr), Admin (Ad) */}
         <div style={styles.roleSwitcher}>
-          <button
-            type="button"
-            style={{ ...styles.roleTab, ...(role === 'PROVIDER' ? styles.activeRoleTab : {}) }}
-            onClick={() => { setRole('PROVIDER'); setLocalError(''); setLocalSuccess(''); }}
-            disabled={loading || signUpSaving}
-          >
-            <User size={16} /> Clinician / Doctor
-          </button>
           <button
             type="button"
             style={{ ...styles.roleTab, ...(role === 'PATIENT' ? styles.activeRoleTab : {}) }}
             onClick={() => { setRole('PATIENT'); setLocalError(''); setLocalSuccess(''); }}
             disabled={loading || signUpSaving}
           >
-            <Users size={16} /> Patient
+            <Users size={15} /> Patient (Pt)
+          </button>
+          <button
+            type="button"
+            style={{ ...styles.roleTab, ...(role === 'PROVIDER' ? styles.activeRoleTab : {}) }}
+            onClick={() => { setRole('PROVIDER'); setLocalError(''); setLocalSuccess(''); }}
+            disabled={loading || signUpSaving}
+          >
+            <User size={15} /> Doctor (Dr)
+          </button>
+          <button
+            type="button"
+            style={{ ...styles.roleTab, ...(role === 'ADMIN' ? styles.activeRoleTab : {}) }}
+            onClick={() => { setRole('ADMIN'); setLocalError(''); setLocalSuccess(''); }}
+            disabled={loading || signUpSaving}
+          >
+            <Shield size={15} /> Admin (Ad)
           </button>
         </div>
 
         {/* Local Error Alert / Success Alert */}
         {(localError || authError) && (
           <div style={styles.errorAlert}>
-            <AlertTriangle size={18} color="#f43f5e" style={{ flexShrink: 0 }} />
+            <AlertTriangle size={18} color="#6b0d24" style={{ flexShrink: 0 }} />
             <span>{localError || authError}</span>
           </div>
         )}
 
         {localSuccess && (
           <div style={styles.successAlert}>
-            <CheckCircle size={18} color="#10b981" style={{ flexShrink: 0 }} />
+            <CheckCircle size={18} color="#19733e" style={{ flexShrink: 0 }} />
             <span>{localSuccess}</span>
           </div>
         )}
 
-        {/* Clinician Form */}
+        {/* Doctor Login Form */}
         {role === 'PROVIDER' && (
           <form onSubmit={handleClinicianSubmit} style={styles.form}>
             <div className="form-group">
               <label className="form-label" htmlFor="username">
-                <span style={styles.labelSpan}><User size={16} /> Username</span>
+                <span style={styles.labelSpan}><User size={16} /> Doctor Name / ID</span>
               </label>
               <input
                 id="username"
                 type="text"
                 className="form-input"
+                placeholder="Enter Doctor Name or ID"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
@@ -232,12 +252,13 @@ export const Login = () => {
 
             <div className="form-group" style={{ marginBottom: '20px' }}>
               <label className="form-label" htmlFor="password">
-                <span style={styles.labelSpan}><Key size={16} /> Password</span>
+                <span style={styles.labelSpan}><Key size={16} /> Doctor Password</span>
               </label>
               <input
                 id="password"
                 type="password"
                 className="form-input"
+                placeholder="Enter Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
@@ -245,9 +266,9 @@ export const Login = () => {
               />
             </div>
 
-            {/* Quick Doctor Account Selector */}
+            {/* Quick Doctor Account Selector Chips */}
             <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
+              <span style={{ fontSize: '0.74rem', color: '#6e6063', fontWeight: '700', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 SELECT DOCTOR ACCOUNT:
               </span>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -256,17 +277,17 @@ export const Login = () => {
                   style={{
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: username === 'sarahjenkins' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.6)',
-                    border: `1px solid ${username === 'sarahjenkins' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
-                    color: '#fff',
+                    background: username === 'sarahjenkins' ? 'rgba(107, 13, 36, 0.12)' : '#f6f3eb',
+                    border: `1px solid ${username === 'sarahjenkins' ? '#6b0d24' : '#e2dbcd'}`,
+                    color: '#2b1b1e',
                     fontSize: '0.75rem',
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
-                  onClick={() => { setUsername('sarahjenkins'); setPassword(''); }}
+                  onClick={() => { setUsername('sarahjenkins'); setPassword('doctor'); }}
                 >
-                  <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Sarah Jenkins</strong>
-                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🫀 Cardiologist (CARDIAC)</span>
+                  <strong style={{ display: 'block', color: '#6b0d24' }}>Dr. Sarah Jenkins</strong>
+                  <span style={{ fontSize: '0.7rem', color: '#6e6063' }}>🫀 Cardiologist</span>
                 </button>
 
                 <button
@@ -274,17 +295,17 @@ export const Login = () => {
                   style={{
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: username === 'robertchen' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.6)',
-                    border: `1px solid ${username === 'robertchen' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
-                    color: '#fff',
+                    background: username === 'robertchen' ? 'rgba(107, 13, 36, 0.12)' : '#f6f3eb',
+                    border: `1px solid ${username === 'robertchen' ? '#6b0d24' : '#e2dbcd'}`,
+                    color: '#2b1b1e',
                     fontSize: '0.75rem',
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
-                  onClick={() => { setUsername('robertchen'); setPassword(''); }}
+                  onClick={() => { setUsername('robertchen'); setPassword('doctor'); }}
                 >
-                  <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Robert Chen</strong>
-                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🫁 Pulmonologist (OXYGEN)</span>
+                  <strong style={{ display: 'block', color: '#6b0d24' }}>Dr. Robert Chen</strong>
+                  <span style={{ fontSize: '0.7rem', color: '#6e6063' }}>🫁 Pulmonologist</span>
                 </button>
 
                 <button
@@ -292,17 +313,17 @@ export const Login = () => {
                   style={{
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: username === 'elenarostova' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.6)',
-                    border: `1px solid ${username === 'elenarostova' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
-                    color: '#fff',
+                    background: username === 'elenarostova' ? 'rgba(107, 13, 36, 0.12)' : '#f6f3eb',
+                    border: `1px solid ${username === 'elenarostova' ? '#6b0d24' : '#e2dbcd'}`,
+                    color: '#2b1b1e',
                     fontSize: '0.75rem',
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
-                  onClick={() => { setUsername('elenarostova'); setPassword(''); }}
+                  onClick={() => { setUsername('elenarostova'); setPassword('doctor'); }}
                 >
-                  <strong style={{ display: 'block', color: '#38bdf8' }}>Dr. Elena Rostova</strong>
-                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🩺 Gen Physician (BP)</span>
+                  <strong style={{ display: 'block', color: '#6b0d24' }}>Dr. Elena Rostova</strong>
+                  <span style={{ fontSize: '0.7rem', color: '#6e6063' }}>🩺 Gen Physician</span>
                 </button>
 
                 <button
@@ -310,17 +331,17 @@ export const Login = () => {
                   style={{
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: username === 'doctor' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.6)',
-                    border: `1px solid ${username === 'doctor' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
-                    color: '#fff',
+                    background: username === 'doctor' ? 'rgba(107, 13, 36, 0.12)' : '#f6f3eb',
+                    border: `1px solid ${username === 'doctor' ? '#6b0d24' : '#e2dbcd'}`,
+                    color: '#2b1b1e',
                     fontSize: '0.75rem',
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
-                  onClick={() => { setUsername('doctor'); setPassword(''); }}
+                  onClick={() => { setUsername('doctor'); setPassword('doctor'); }}
                 >
-                  <strong style={{ display: 'block', color: '#2dd4bf' }}>Common Doctor</strong>
-                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>🏥 All Patients & Alerts</span>
+                  <strong style={{ display: 'block', color: '#6b0d24' }}>Dr. Rajesh Kumar</strong>
+                  <span style={{ fontSize: '0.7rem', color: '#6e6063' }}>🏥 All Patients</span>
                 </button>
               </div>
             </div>
@@ -331,7 +352,53 @@ export const Login = () => {
               style={styles.submitBtn}
               disabled={loading}
             >
-              {loading ? 'Authenticating...' : 'Sign In as Clinician'}
+              {loading ? 'Authenticating Doctor...' : 'Sign In as Doctor (Dr)'}
+            </button>
+          </form>
+        )}
+
+        {/* Admin Login Form */}
+        {role === 'ADMIN' && (
+          <form onSubmit={handleAdminSubmit} style={styles.form}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="adminId">
+                <span style={styles.labelSpan}><User size={16} /> Admin ID</span>
+              </label>
+              <input
+                id="adminId"
+                type="text"
+                className="form-input"
+                placeholder="Enter Admin ID"
+                value={adminId}
+                onChange={(e) => setAdminId(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label className="form-label" htmlFor="adminPassword">
+                <span style={styles.labelSpan}><Key size={16} /> Admin Password</span>
+              </label>
+              <input
+                id="adminPassword"
+                type="password"
+                className="form-input"
+                placeholder="Enter Password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={styles.submitBtn}
+              disabled={loading}
+            >
+              {loading ? 'Authenticating Admin...' : 'Sign In as Admin (Ad)'}
             </button>
           </form>
         )}
@@ -532,14 +599,19 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '24px',
+    background: '#f7f4ed',
   },
   loginCard: {
     width: '100%',
-    maxWidth: '480px',
-    padding: '36px 32px',
+    maxWidth: '440px',
+    padding: '40px 36px',
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
+    background: '#ffffff',
+    borderRadius: '16px',
+    border: '1px solid #e7e0d3',
+    boxShadow: '0 12px 40px rgba(107, 13, 36, 0.08)',
   },
   header: {
     display: 'flex',
@@ -551,47 +623,49 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'rgba(13, 148, 136, 0.1)',
-    border: '1px solid rgba(13, 148, 136, 0.2)',
+    background: 'rgba(107, 13, 36, 0.08)',
+    border: '1px solid rgba(107, 13, 36, 0.15)',
     padding: '12px',
     borderRadius: '14px',
     marginBottom: '16px',
+    color: '#6b0d24',
   },
   title: {
-    fontSize: '2rem',
+    fontSize: '1.8rem',
     fontWeight: '800',
-    color: '#fff',
-    letterSpacing: '-0.03em',
+    color: '#6b0d24',
+    letterSpacing: '-0.02em',
     marginBottom: '4px',
   },
   subtitle: {
-    fontSize: '0.9rem',
-    color: '#94a3b8',
+    fontSize: '0.88rem',
+    color: '#6e6063',
+    fontWeight: '500',
   },
   infoBadge: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '6px',
-    background: 'rgba(13, 148, 136, 0.08)',
-    border: '1px solid rgba(13, 148, 136, 0.15)',
+    background: 'rgba(107, 13, 36, 0.06)',
+    border: '1px solid rgba(107, 13, 36, 0.12)',
     padding: '6px 12px',
     borderRadius: '8px',
   },
   infoText: {
-    fontSize: '0.8rem',
-    fontWeight: '600',
-    color: '#0d9488',
+    fontSize: '0.78rem',
+    fontWeight: '700',
+    color: '#6b0d24',
     textTransform: 'uppercase',
-    letterSpacing: '0.02em',
+    letterSpacing: '0.04em',
   },
   roleSwitcher: {
     display: 'flex',
-    background: 'rgba(15, 23, 42, 0.4)',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    background: '#f6f3eb',
+    border: '1px solid #e2dbcd',
     borderRadius: '10px',
-    padding: '6px',
-    gap: '6px',
+    padding: '4px',
+    gap: '4px',
   },
   roleTab: {
     flex: 1,
@@ -602,18 +676,18 @@ const styles = {
     padding: '10px',
     background: 'none',
     border: 'none',
-    color: '#94a3b8',
-    fontSize: '0.9rem',
-    fontWeight: '600',
+    color: '#6e6063',
+    fontSize: '0.88rem',
+    fontWeight: '700',
     borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.25s',
     outline: 'none',
   },
   activeRoleTab: {
-    background: 'rgba(13, 148, 136, 0.1)',
-    color: '#0d9488',
-    border: '1px solid rgba(13, 148, 136, 0.2)',
+    background: '#6b0d24',
+    color: '#ffffff',
+    boxShadow: '0 2px 8px rgba(107, 13, 36, 0.25)',
   },
   patientSubContainer: {
     display: 'flex',
@@ -622,8 +696,8 @@ const styles = {
   },
   subTabBar: {
     display: 'flex',
-    background: 'rgba(15, 23, 42, 0.2)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    background: '#f6f3eb',
+    borderBottom: '1px solid #e2dbcd',
     paddingBottom: '2px',
     gap: '12px',
   },
@@ -634,38 +708,42 @@ const styles = {
     padding: '8px 12px',
     background: 'none',
     border: 'none',
-    color: '#64748b',
+    color: '#6e6063',
     fontSize: '0.85rem',
-    fontWeight: '600',
+    fontWeight: '700',
     cursor: 'pointer',
     borderBottom: '2px solid transparent',
     transition: 'all 0.2s',
     outline: 'none',
   },
   activeSubTabButton: {
-    color: '#0d9488',
-    borderBottom: '2px solid #0d9488',
+    color: '#6b0d24',
+    borderBottom: '2px solid #6b0d24',
   },
   errorAlert: {
     display: 'flex',
     gap: '10px',
     padding: '12px 16px',
-    background: 'rgba(244, 63, 94, 0.1)',
-    border: '1px solid rgba(244, 63, 94, 0.2)',
+    background: '#fdebed',
+    border: '1px solid #eab8bc',
     borderRadius: '8px',
-    color: '#f43f5e',
+    color: '#6b0d24',
     fontSize: '0.88rem',
+    fontWeight: '600',
     alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
   },
   successAlert: {
     display: 'flex',
     gap: '10px',
     padding: '12px 16px',
-    background: 'rgba(16, 185, 129, 0.1)',
-    border: '1px solid rgba(16, 185, 129, 0.2)',
+    background: '#eaf6ee',
+    border: '1px solid #bce4c8',
     borderRadius: '8px',
-    color: '#10b981',
+    color: '#19733e',
     fontSize: '0.88rem',
+    fontWeight: '600',
     alignItems: 'center',
   },
   form: {
@@ -693,15 +771,20 @@ const styles = {
     width: '100%',
     padding: '12px',
     fontSize: '1rem',
-    fontWeight: '600',
+    fontWeight: '700',
+    background: '#6b0d24',
+    color: '#ffffff',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
   },
   selectInput: {
     width: '100%',
     padding: '10px 14px',
     borderRadius: '8px',
-    background: 'rgba(15, 23, 42, 0.6)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    color: '#fff',
+    background: '#f6f3eb',
+    border: '1px solid #e2dbcd',
+    color: '#2b1b1e',
     outline: 'none',
     fontSize: '0.95rem',
     cursor: 'pointer',

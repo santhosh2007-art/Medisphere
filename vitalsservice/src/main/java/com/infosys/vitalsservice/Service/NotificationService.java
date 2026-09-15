@@ -56,19 +56,23 @@ public class NotificationService {
      */
     @Scheduled(fixedRate = 30000)
     public void checkUnacknowledgedAlertsForEscalation() {
-        Date timeoutThreshold = new Date(System.currentTimeMillis() - ESCALATION_TIMEOUT_MS);
-        List<Alert> staleAlerts = alertRepository.findByStatusAndCreatedTimeBefore("ACTIVE", timeoutThreshold);
+        try {
+            Date timeoutThreshold = new Date(System.currentTimeMillis() - ESCALATION_TIMEOUT_MS);
+            List<Alert> staleAlerts = alertRepository.findByStatusAndCreatedTimeBefore("ACTIVE", timeoutThreshold);
 
-        if (staleAlerts != null && !staleAlerts.isEmpty()) {
-            for (Alert alert : staleAlerts) {
-                alert.setStatus("ESCALATED");
-                alert.setEscalated(true);
-                alert.setEscalatedTime(new Date());
-                alertRepository.save(alert);
+            if (staleAlerts != null && !staleAlerts.isEmpty()) {
+                for (Alert alert : staleAlerts) {
+                    alert.setStatus("ESCALATED");
+                    alert.setEscalated(true);
+                    alert.setEscalatedTime(new Date());
+                    alertRepository.save(alert);
 
-                logger.warn("⏰ [AUTO-ESCALATION TIMEOUT] Alert ID {} for Patient {} auto-escalated to ESCALATED status (Unacknowledged > 2 min)",
-                        alert.getId(), alert.getPatientId());
+                    logger.warn("⏰ [AUTO-ESCALATION TIMEOUT] Alert ID {} for Patient {} auto-escalated to ESCALATED status (Unacknowledged > 2 min)",
+                            alert.getId(), alert.getPatientId());
+                }
             }
+        } catch (Exception e) {
+            // Silently log or ignore when database connection is deferred
         }
     }
 
@@ -78,22 +82,24 @@ public class NotificationService {
      */
     @Scheduled(fixedRate = 30000)
     public void checkDoctorVisitedAlertsForAutoDisable() {
-        // 30 minutes ago threshold
-        Date thirtyMinsAgo = new Date(System.currentTimeMillis() - (30 * 60 * 1000));
-        List<Alert> allAlerts = alertRepository.findAll();
+        try {
+            // 30 minutes ago threshold
+            Date thirtyMinsAgo = new Date(System.currentTimeMillis() - (30 * 60 * 1000));
+            List<Alert> allAlerts = alertRepository.findAll();
 
-        if (allAlerts != null && !allAlerts.isEmpty()) {
-            for (Alert alert : allAlerts) {
-                if ("VISITED".equals(alert.getDoctorVisitStatus()) && alert.getVisitedTime() != null && alert.getVisitedTime().before(thirtyMinsAgo)) {
-                    alert.setStatus("DISABLED");
-                    alert.setDoctorVisitStatus("DISABLED");
-                    alert.setDisabledTime(new Date());
-                    alertRepository.save(alert);
+            if (allAlerts != null && !allAlerts.isEmpty()) {
+                for (Alert alert : allAlerts) {
+                    if ("VISITED".equals(alert.getDoctorVisitStatus()) && alert.getVisitedTime() != null && alert.getVisitedTime().before(thirtyMinsAgo)) {
+                        alert.setStatus("DISABLED");
+                        alert.setDoctorVisitStatus("DISABLED");
+                        alert.setDisabledTime(new Date());
+                        alertRepository.save(alert);
 
-                    logger.info("⏸️ [30-MIN AUTO-DISABLE] Alert ID {} auto-disabled 30 minutes after doctor visit by {}",
-                            alert.getId(), alert.getVisitedBy());
+                        logger.info("⏸️ [30-MIN AUTO-DISABLE] Alert ID {} auto-disabled 30 minutes after doctor visit by {}",
+                                alert.getId(), alert.getVisitedBy());
+                    }
                 }
             }
-        }
+        } catch (Exception ignored) {}
     }
 }

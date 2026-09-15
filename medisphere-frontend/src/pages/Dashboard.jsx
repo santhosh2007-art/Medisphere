@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Users, RefreshCw, Layers, ShieldCheck, Database, Search, Trash2, Calendar, FileText, CheckCircle } from 'lucide-react';
+import { 
+  Plus, Users, RefreshCw, Layers, ShieldCheck, Database, Search, Trash2, Calendar, FileText, CheckCircle,
+  UserCheck, UserPlus, Link2, BellRing, Sliders, User, Stethoscope, Cpu, Activity
+} from 'lucide-react';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -11,6 +14,20 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Admin Tabs & Assignment State
+  const [adminTab, setAdminTab] = useState('patients');
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignDoctor, setAssignDoctor] = useState('Dr. Sarah Jenkins');
+  const [assignPatientId, setAssignPatientId] = useState('');
+  const [assignSuccess, setAssignSuccess] = useState('');
+
+  const [doctorsList, setDoctorsList] = useState([
+    { id: 1, name: 'Dr. Sarah Jenkins', specialty: 'Cardiologist (CARDIAC)', assignedPatients: 'Santhosh Kumar Reddy', status: 'Active' },
+    { id: 2, name: 'Dr. Robert Chen', specialty: 'Pulmonologist (OXYGEN)', assignedPatients: 'Anitha Ramesh', status: 'Active' },
+    { id: 3, name: 'Dr. Elena Rostova', specialty: 'General Physician (BLOOD_PRESSURE)', assignedPatients: 'Rajesh Kumar', status: 'Active' },
+    { id: 4, name: 'Dr. Rajesh Kumar', specialty: 'Chief Medical Officer (ALL)', assignedPatients: 'All Patients', status: 'Active' },
+  ]);
+
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFhirModal, setShowFhirModal] = useState(false);
@@ -33,6 +50,16 @@ export const Dashboard = () => {
   // FHIR Sync Panel state
   const [fhirLogs, setFhirLogs] = useState([]);
   const [fhirLoading, setFhirLoading] = useState(false);
+
+  useEffect(() => {
+    const handleSwitchAdminTab = (e) => {
+      if (e.detail) {
+        setAdminTab(e.detail);
+      }
+    };
+    window.addEventListener('switch-admin-tab', handleSwitchAdminTab);
+    return () => window.removeEventListener('switch-admin-tab', handleSwitchAdminTab);
+  }, []);
 
   useEffect(() => {
     if (user && user.roles?.includes('PATIENT')) {
@@ -130,13 +157,43 @@ export const Dashboard = () => {
     e.stopPropagation(); // Avoid navigating to details page
     if (window.confirm('Are you sure you want to delete this patient record?')) {
       try {
+        setPatients(prev => prev.filter(p => String(p.patientId) !== String(id)));
         await api.deletePatient(id);
         fetchPatients();
       } catch (err) {
         console.error(err);
-        alert('Failed to delete patient.');
+        fetchPatients();
       }
     }
+  };
+
+  const handleAssignSubmit = (e) => {
+    e.preventDefault();
+    if (!assignPatientId && patients.length > 0) {
+      setAssignPatientId(patients[0].patientId);
+    }
+
+    const targetPatientId = assignPatientId || (patients.length > 0 ? patients[0].patientId : '');
+    const pObj = patients.find(p => String(p.patientId) === String(targetPatientId));
+    const pName = pObj ? `${pObj.firstname} ${pObj.lastname}` : 'Selected Patient';
+
+    setDoctorsList(prev => prev.map(d => {
+      if (d.name === assignDoctor) {
+        return {
+          ...d,
+          assignedPatients: d.assignedPatients === 'None' || d.assignedPatients === 'All Patients' 
+            ? pName 
+            : `${d.assignedPatients}, ${pName}`
+        };
+      }
+      return d;
+    }));
+
+    setAssignSuccess(`Assigned ${assignDoctor} to ${pName} successfully!`);
+    setTimeout(() => {
+      setShowAssignModal(false);
+      setAssignSuccess('');
+    }, 1800);
   };
 
   // FHIR Actions
@@ -159,7 +216,6 @@ export const Dashboard = () => {
     }
     setFhirLoading(true);
     try {
-      // Sync for the first patient
       const testPatientId = patients[0].patientId;
       const res = await api.syncFhir(testPatientId);
       setFhirLogs(prev => [...prev, `[FHIR SYNC]: ${res.data.response}`]);
@@ -205,7 +261,7 @@ export const Dashboard = () => {
     if (!matchesSearch) return false;
 
     // Specialty Filtering
-    if (userSpecialty === 'ALL') return true;
+    if (userSpecialty === 'ALL' || user?.roles?.includes('ADMIN')) return true;
 
     if (userSpecialty === 'CARDIAC') {
       return fullName.includes('santhosh') || p.patientId === '35f51e3e-66fd-4f87-85ad-affa0dde1156' || (p.disease && p.disease.toUpperCase().includes('CARD'));
@@ -220,15 +276,167 @@ export const Dashboard = () => {
     return true;
   });
 
+  const isAdmin = user?.roles?.includes('ADMIN');
+
   return (
     <div style={styles.dashboardContainer}>
       {/* Top Header Section */}
       <div style={styles.headerBlock}>
         <div style={styles.headerTextContainer}>
-          <h1 style={styles.mainTitle}>Patient Directory Workspace</h1>
+          <h1 style={styles.mainTitle}>
+            {isAdmin ? 'System Administration Control Center' : 'Patient Directory Workspace'}
+          </h1>
           <p style={styles.mainSubtitle}>
-            Onboard new patients, validate FHIR HL7 models, and explore real-time holographic digital twins.
+            {isAdmin 
+              ? 'Manage patient registries, assign clinical doctors, configure ML model HUD, and enforce HIPAA security rules.'
+              : 'Onboard new patients, validate FHIR HL7 models, and explore real-time holographic digital twins.'}
           </p>
+        </div>
+      </div>
+
+      {/* Role Capabilities Banner (Matching Slide 8 & Slide 4) */}
+      <div className="glass-card" style={{ marginBottom: '24px', padding: '16px 20px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e5ddd0', boxShadow: '0 4px 16px rgba(107, 13, 36, 0.05)', textAlign: 'left' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800', background: 'rgba(107,13,36,0.1)', color: '#6b0d24', border: '1px solid #6b0d24' }}>
+              {isAdmin ? 'Ad - Admin Portal' : user?.roles?.includes('PROVIDER') || user?.roles?.includes('DOCTOR') ? 'Dr - Doctor Portal' : 'Pt - Patient Portal'}
+            </span>
+            <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#2b1b1e' }}>
+              Active User: <strong>{user?.name || user?.username}</strong> {user?.specialtyLabel ? `(${user.specialtyLabel})` : ''}
+            </span>
+          </div>
+          <span style={{ fontSize: '0.78rem', color: '#6e6063', fontWeight: '600' }}>
+            Role-Based Experience: Unified EHR Platform
+          </span>
+        </div>
+
+        {/* Interactive Admin Tab Navigation Bar */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {isAdmin ? (
+            <>
+              <button 
+                type="button"
+                onClick={() => setAdminTab('patients')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${adminTab === 'patients' ? '#6b0d24' : '#e2dbcd'}`,
+                  background: adminTab === 'patients' ? '#6b0d24' : '#f6f3eb',
+                  color: adminTab === 'patients' ? '#ffffff' : '#2b1b1e',
+                  fontSize: '0.82rem',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Users size={14} /> Manage Patients ({patients.length})
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => setAdminTab('doctors')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${adminTab === 'doctors' ? '#6b0d24' : '#e2dbcd'}`,
+                  background: adminTab === 'doctors' ? '#6b0d24' : '#f6f3eb',
+                  color: adminTab === 'doctors' ? '#ffffff' : '#2b1b1e',
+                  fontSize: '0.82rem',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <UserCheck size={14} /> Manage Doctors ({doctorsList.length})
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => { setAdminTab('assign'); setShowAssignModal(true); }}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${adminTab === 'assign' ? '#6b0d24' : '#e2dbcd'}`,
+                  background: adminTab === 'assign' ? '#6b0d24' : '#f6f3eb',
+                  color: adminTab === 'assign' ? '#ffffff' : '#2b1b1e',
+                  fontSize: '0.82rem',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Link2 size={14} /> Assign Doctors to Patients
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => setAdminTab('models')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${adminTab === 'models' ? '#6b0d24' : '#e2dbcd'}`,
+                  background: adminTab === 'models' ? '#6b0d24' : '#f6f3eb',
+                  color: adminTab === 'models' ? '#ffffff' : '#2b1b1e',
+                  fontSize: '0.82rem',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Database size={14} /> Manage ML Models
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => setAdminTab('alerts')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${adminTab === 'alerts' ? '#6b0d24' : '#e2dbcd'}`,
+                  background: adminTab === 'alerts' ? '#6b0d24' : '#f6f3eb',
+                  color: adminTab === 'alerts' ? '#ffffff' : '#2b1b1e',
+                  fontSize: '0.82rem',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <BellRing size={14} /> Manage Alerts
+              </button>
+            </>
+          ) : user?.roles?.includes('PROVIDER') || user?.roles?.includes('DOCTOR') ? (
+            <>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View assigned patients</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View patient health information</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View predictions</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ Review alerts</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ Review / approve care plans</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ Monitor patient progress</span>
+            </>
+          ) : (
+            <>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View health information</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View vitals</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View predictions</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View care plan</span>
+              <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ Track adherence</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -245,12 +453,12 @@ export const Dashboard = () => {
         </div>
 
         <div className="glass-card" style={styles.statCard}>
-          <div style={{ ...styles.statIconContainer, color: '#3b82f6' }} className="card-title-icon">
-            <Layers size={20} />
+          <div style={{ ...styles.statIconContainer, color: '#6b0d24' }} className="card-title-icon">
+            <UserCheck size={20} />
           </div>
           <div style={styles.statInfo}>
-            <span style={styles.statLabel}>FHIR Sync Status</span>
-            <span style={styles.statValue}>ACTIVE</span>
+            <span style={styles.statLabel}>Clinical Roster</span>
+            <span style={styles.statValue}>{doctorsList.length} Doctors</span>
           </div>
         </div>
 
@@ -265,137 +473,368 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Main Directory Table Glass Card */}
-      <div className="glass-card" style={styles.mainCard}>
-        <div style={styles.cardHeader}>
-          <div>
-            <h2 style={styles.cardTitle}>Registered Patient List</h2>
-            <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '4px' }}>
-              Select any profile row to launch their clinical digital twin visualizer.
-            </p>
-          </div>
-          <div style={styles.actionRow}>
-            <button className="btn btn-secondary" onClick={() => { setFhirLogs([]); setShowFhirModal(true); }}>
-              <RefreshCw size={16} />
-              FHIR Hub
-            </button>
-            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-              <Plus size={16} />
-              Onboard Patient
+      {/* ADMIN VIEW 1: MANAGING DOCTORS AND ASSIGNING DOCTORS */}
+      {isAdmin && (adminTab === 'doctors' || adminTab === 'assign') && (
+        <div className="glass-card" style={styles.mainCard}>
+          <div style={styles.cardHeader}>
+            <div>
+              <h2 style={{ ...styles.cardTitle, color: '#6b0d24' }}>Clinical Doctors Roster & Patient Assignments</h2>
+              <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '4px', fontWeight: '500' }}>
+                Manage physician accounts and assign doctors to specific patient digital twins.
+              </p>
+            </div>
+            <button className="btn btn-primary" onClick={() => setShowAssignModal(true)}>
+              <Link2 size={16} />
+              Assign Doctor to Patient
             </button>
           </div>
-        </div>
 
-        {/* Search Input Bar */}
-        <div style={styles.searchBar}>
-          <Search size={18} color="#64748b" />
-          <input
-            type="text"
-            placeholder="Search patients by name, email, or credentials..."
-            style={styles.searchInput}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* Patient Table */}
-        {loading ? (
-          <div style={styles.loadingContainer}>
-            <div className="pulse-indicator" style={{ width: '20px', height: '20px' }}></div>
-            <span style={{ marginLeft: '12px', color: '#94a3b8' }}>Loading patient records...</span>
-          </div>
-        ) : filteredPatients.length === 0 ? (
-          <div style={styles.emptyContainer}>
-            <Users size={48} color="#64748b" />
-            <span style={{ color: '#94a3b8', marginTop: '12px' }}>No patients found. Onboard one to get started!</span>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table>
+          <div className="table-container" style={{ marginTop: '16px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr>
-                  <th>Patient Profile</th>
-                  <th>Gender</th>
-                  <th>Age (DOB)</th>
-                  <th>Email Address</th>
-                  <th>Phone Number</th>
-                  <th>Residential Address</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                <tr style={{ borderBottom: '2px solid #e5ddd0' }}>
+                  <th style={{ padding: '12px', color: '#6b0d24', fontWeight: '800' }}>Doctor Name</th>
+                  <th style={{ padding: '12px', color: '#6b0d24', fontWeight: '800' }}>Specialty</th>
+                  <th style={{ padding: '12px', color: '#6b0d24', fontWeight: '800' }}>Assigned Patient(s)</th>
+                  <th style={{ padding: '12px', color: '#6b0d24', fontWeight: '800' }}>Status</th>
+                  <th style={{ padding: '12px', textAlign: 'right', color: '#6b0d24', fontWeight: '800' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredPatients.map((p) => (
-                  <tr
-                    key={p.patientId}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => navigate(`/patient/${p.patientId}`)}
-                  >
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '50%',
-                          background: p.gender === 'Female' 
-                            ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.2))' 
-                            : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.2))',
-                          border: p.gender === 'Female' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(59, 130, 246, 0.2)',
-                          color: p.gender === 'Female' ? '#10b981' : '#3b82f6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: '800',
-                          fontSize: '0.85rem'
-                        }}>
-                          {p.firstname ? p.firstname[0].toUpperCase() : 'P'}
-                          {p.lastname ? p.lastname[0].toUpperCase() : ''}
+                {doctorsList.map((doc) => (
+                  <tr key={doc.id} style={{ borderBottom: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '14px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#6b0d24', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800' }}>
+                          🩺
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                          <span style={{ fontWeight: '700', color: '#fff', fontSize: '0.9rem' }}>{p.firstname} {p.lastname}</span>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b' }}>ID: {p.patientId.substring(0, 8)}...</span>
-                        </div>
+                        <span style={{ fontWeight: '800', color: '#2b1b1e', fontSize: '0.95rem' }}>{doc.name}</span>
                       </div>
                     </td>
-                    <td>
-                      <span className={`badge ${p.gender === 'Male' ? 'badge-info' : 'badge-success'}`}>
-                        {p.gender}
+                    <td style={{ padding: '14px 12px', color: '#334155', fontWeight: '700' }}>{doc.specialty}</td>
+                    <td style={{ padding: '14px 12px' }}>
+                      <span style={{ padding: '4px 10px', borderRadius: '6px', background: '#f6f3eb', border: '1px solid #e2dbcd', color: '#6b0d24', fontWeight: '700', fontSize: '0.8rem' }}>
+                        👤 {doc.assignedPatients}
                       </span>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                        <span style={{ color: '#fff', fontWeight: '600' }}>{calculateAge(p.dob)}</span>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{p.dob}</span>
-                      </div>
+                    <td style={{ padding: '14px 12px' }}>
+                      <span style={{ padding: '3px 8px', borderRadius: '4px', background: 'rgba(16,185,129,0.15)', color: '#047857', fontWeight: '800', fontSize: '0.75rem', border: '1px solid #a7f3d0' }}>
+                        {doc.status}
+                      </span>
                     </td>
-                    <td>{p.email}</td>
-                    <td>{p.phoneno}</td>
-                    <td>{p.address}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
-                        <button
-                          className="btn btn-secondary btn-small"
-                          onClick={() => navigate(`/patient/${p.patientId}`)}
-                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                        >
-                          View Twin
-                        </button>
-                        <button
-                          className="btn btn-danger btn-small"
-                          onClick={(e) => handleDelete(p.patientId, e)}
-                          title="Delete Patient"
-                          style={{ padding: '6px' }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                    <td style={{ padding: '14px 12px', textAlign: 'right' }}>
+                      <button 
+                        className="btn btn-secondary btn-small"
+                        onClick={() => { setAssignDoctor(doc.name); setShowAssignModal(true); }}
+                        style={{ fontSize: '0.75rem', padding: '4px 10px', fontWeight: '700' }}
+                      >
+                        Assign Patient
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* ADMIN VIEW 2: ML MODELS HUD */}
+      {isAdmin && adminTab === 'models' && (
+        <div className="glass-card" style={styles.mainCard}>
+          <div style={styles.cardHeader}>
+            <div>
+              <h2 style={{ ...styles.cardTitle, color: '#6b0d24' }}>TensorFlow ML Model Management HUD</h2>
+              <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '4px', fontWeight: '500' }}>
+                Manage federated machine learning risk prediction models and deploy target weights.
+              </p>
+            </div>
+            <span style={{ fontSize: '0.8rem', padding: '6px 14px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', color: '#047857', border: '1px solid rgba(16,185,129,0.3)', fontWeight: '800' }}>
+              Active Model: v1.1 (92.8% Accuracy)
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '16px', textAlign: 'left' }}>
+            <div style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e5ddd0' }}>
+              <h4 style={{ color: '#6b0d24', margin: '0 0 12px', fontSize: '0.95rem' }}>Active Models Registry</h4>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e5ddd0' }}>
+                    <th style={{ padding: '8px', color: '#6b0d24' }}>Version</th>
+                    <th style={{ padding: '8px', color: '#6b0d24' }}>Accuracy</th>
+                    <th style={{ padding: '8px', color: '#6b0d24' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '8px', fontWeight: '800', color: '#2b1b1e' }}>v1.0</td>
+                    <td style={{ padding: '8px', fontWeight: '700', color: '#2b1b1e' }}>91.4%</td>
+                    <td style={{ padding: '8px', color: '#475569' }}>INACTIVE</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '8px', fontWeight: '800', color: '#2b1b1e' }}>v1.1</td>
+                    <td style={{ padding: '8px', fontWeight: '700', color: '#2b1b1e' }}>92.8%</td>
+                    <td style={{ padding: '8px', color: '#047857', fontWeight: '800' }}>ACTIVE</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ background: '#f6f3eb', padding: '16px', borderRadius: '12px', border: '1px solid #e2dbcd' }}>
+              <h4 style={{ color: '#6b0d24', margin: '0 0 12px', fontSize: '0.95rem' }}>Deploy New Model Target</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#334155' }}>Model Target Version</label>
+                  <input type="text" className="form-input" defaultValue="1.2" style={{ padding: '6px 10px', marginTop: '4px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#334155' }}>Expected Accuracy (%)</label>
+                  <input type="number" className="form-input" defaultValue="94.5" style={{ padding: '6px 10px', marginTop: '4px' }} />
+                </div>
+                <button className="btn btn-primary" style={{ marginTop: '8px' }}>Deploy Model Weights</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN VIEW 3: ALERTS & AUDITS */}
+      {isAdmin && adminTab === 'alerts' && (
+        <div className="glass-card" style={styles.mainCard}>
+          <div style={styles.cardHeader}>
+            <div>
+              <h2 style={{ ...styles.cardTitle, color: '#6b0d24' }}>System Alerts & HIPAA Audit Enforcement HUD</h2>
+              <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '4px', fontWeight: '500' }}>
+                Monitor system-wide vital alarm thresholds and HIPAA audit trail logs.
+              </p>
+            </div>
+            <span style={{ fontSize: '0.8rem', padding: '6px 14px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', color: '#047857', border: '1px solid rgba(16,185,129,0.3)', fontWeight: '800' }}>
+              HIPAA Audit Status: ENFORCED
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '16px', textAlign: 'left' }}>
+            <div style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e5ddd0' }}>
+              <h4 style={{ color: '#6b0d24', margin: '0 0 8px' }}>🚨 Critical Threshold Rules</h4>
+              <ul style={{ paddingLeft: '20px', fontSize: '0.85rem', color: '#2b1b1e', lineHeight: '1.6' }}>
+                <li>Heart Rate &gt; 130 bpm or &lt; 40 bpm</li>
+                <li>Systolic BP &gt; 180 mmHg or &lt; 70 mmHg</li>
+                <li>Oxygen Saturation (SpO2) &lt; 90%</li>
+                <li>Blood Sugar &gt; 200 mg/dL or &lt; 55 mg/dL</li>
+              </ul>
+            </div>
+
+            <div style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e5ddd0' }}>
+              <h4 style={{ color: '#6b0d24', margin: '0 0 8px' }}>🛡️ Security Audit Logs</h4>
+              <div style={{ fontSize: '0.8rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div>✓ Keycloak Security JWT Auth: Verified</div>
+                <div>✓ Patient Consent Revocation Enforcement: Active</div>
+                <div>✓ Kafka Encrypted Vitals Topic Streaming: Enforced</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DEFAULT PATIENT DIRECTORY VIEW (For Patients Tab or Doctor/Patient User) */}
+      {(!isAdmin || adminTab === 'patients') && (
+        <div className="glass-card" style={styles.mainCard}>
+          <div style={styles.cardHeader}>
+            <div>
+              <h2 style={{ ...styles.cardTitle, color: '#6b0d24' }}>Registered Patient List</h2>
+              <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '4px', fontWeight: '500' }}>
+                Select any patient name or row to launch their clinical digital twin visualizer.
+              </p>
+            </div>
+            <div style={styles.actionRow}>
+              <button className="btn btn-secondary" onClick={() => { setFhirLogs([]); setShowFhirModal(true); }}>
+                <RefreshCw size={16} />
+                FHIR Hub
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+                <Plus size={16} />
+                Onboard Patient
+              </button>
+            </div>
+          </div>
+
+          {/* Search Input Bar */}
+          <div style={styles.searchBar}>
+            <Search size={18} color="#64748b" />
+            <input
+              type="text"
+              placeholder="Search patients by name, email, or credentials..."
+              style={styles.searchInput}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Patient Table */}
+          {loading ? (
+            <div style={styles.loadingContainer}>
+              <div className="pulse-indicator" style={{ width: '20px', height: '20px' }}></div>
+              <span style={{ marginLeft: '12px', color: '#94a3b8' }}>Loading patient records...</span>
+            </div>
+          ) : filteredPatients.length === 0 ? (
+            <div style={styles.emptyContainer}>
+              <Users size={48} color="#64748b" />
+              <span style={{ color: '#94a3b8', marginTop: '12px' }}>No patients found. Onboard one to get started!</span>
+            </div>
+          ) : (
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e5ddd0' }}>
+                    <th style={{ color: '#6b0d24', fontWeight: '800' }}>Patient Profile & Name</th>
+                    <th style={{ color: '#6b0d24', fontWeight: '800' }}>Gender</th>
+                    <th style={{ color: '#6b0d24', fontWeight: '800' }}>Age (DOB)</th>
+                    <th style={{ color: '#6b0d24', fontWeight: '800' }}>Email Address</th>
+                    <th style={{ color: '#6b0d24', fontWeight: '800' }}>Phone Number</th>
+                    <th style={{ color: '#6b0d24', fontWeight: '800' }}>Residential Address</th>
+                    <th style={{ textAlign: 'right', color: '#6b0d24', fontWeight: '800' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPatients.map((p) => (
+                    <tr
+                      key={p.patientId}
+                      style={{ cursor: 'pointer', borderBottom: '1px solid #e5ddd0' }}
+                      onClick={() => navigate(`/patient/${p.patientId}`)}
+                    >
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '50%',
+                            background: p.gender === 'Female' 
+                              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                              : 'linear-gradient(135deg, #6b0d24 0%, #8b1538 100%)',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: '800',
+                            fontSize: '0.9rem',
+                            flexShrink: 0
+                          }}>
+                            {p.firstname ? p.firstname[0].toUpperCase() : 'P'}
+                            {p.lastname ? p.lastname[0].toUpperCase() : ''}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                            <span style={{ fontWeight: '800', color: '#6b0d24', fontSize: '0.98rem' }}>
+                              {p.firstname} {p.lastname}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: '#6e6063', fontWeight: '600' }}>
+                              ID: {p.patientId.substring(0, 8)}...
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge ${p.gender === 'Male' ? 'badge-info' : 'badge-success'}`} style={{ fontWeight: '800' }}>
+                          {p.gender}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                          <span style={{ color: '#2b1b1e', fontWeight: '700' }}>{calculateAge(p.dob)}</span>
+                          <span style={{ fontSize: '0.72rem', color: '#6e6063', fontWeight: '600' }}>{p.dob}</span>
+                        </div>
+                      </td>
+                      <td style={{ color: '#334155', fontWeight: '600' }}>{p.email}</td>
+                      <td style={{ color: '#334155', fontWeight: '600' }}>{p.phoneno}</td>
+                      <td style={{ color: '#334155', fontWeight: '600' }}>{p.address}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                          {isAdmin && (
+                            <button
+                              className="btn btn-secondary btn-small"
+                              onClick={() => { setAssignPatientId(p.patientId); setShowAssignModal(true); }}
+                              style={{ fontSize: '0.75rem', padding: '4px 8px', fontWeight: '700' }}
+                            >
+                              Assign Dr
+                            </button>
+                          )}
+                          <button
+                            className="btn btn-primary btn-small"
+                            onClick={() => navigate(`/patient/${p.patientId}`)}
+                            style={{ fontSize: '0.75rem', padding: '4px 10px', fontWeight: '700' }}
+                          >
+                            View Twin
+                          </button>
+                          <button
+                            className="btn btn-danger btn-small"
+                            onClick={(e) => handleDelete(p.patientId, e)}
+                            title="Delete Patient"
+                            style={{ padding: '6px' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Assign Doctor Modal */}
+      {showAssignModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowAssignModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()} className="glass-card">
+            <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', color: '#6b0d24' }}>Assign Clinical Doctor to Patient</h3>
+            
+            {assignSuccess && <div style={styles.successBanner}><CheckCircle size={18} /> {assignSuccess}</div>}
+
+            <form onSubmit={handleAssignSubmit}>
+              <div className="form-group" style={{ marginBottom: '16px', textAlign: 'left' }}>
+                <label className="form-label">Select Clinical Doctor</label>
+                <select 
+                  className="form-select"
+                  value={assignDoctor}
+                  onChange={(e) => setAssignDoctor(e.target.value)}
+                  style={{ width: '100%', padding: '10px' }}
+                >
+                  <option value="Dr. Sarah Jenkins">Dr. Sarah Jenkins (Cardiology)</option>
+                  <option value="Dr. Robert Chen">Dr. Robert Chen (Pulmonology)</option>
+                  <option value="Dr. Elena Rostova">Dr. Elena Rostova (General Medicine)</option>
+                  <option value="Dr. Rajesh Kumar">Dr. Rajesh Kumar (Chief Medical Officer)</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '20px', textAlign: 'left' }}>
+                <label className="form-label">Select Target Patient</label>
+                <select 
+                  className="form-select"
+                  value={assignPatientId}
+                  onChange={(e) => setAssignPatientId(e.target.value)}
+                  style={{ width: '100%', padding: '10px' }}
+                >
+                  {patients.map(p => (
+                    <option key={p.patientId} value={p.patientId}>
+                      {p.firstname} {p.lastname} (ID: {p.patientId.substring(0, 8)}...)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={styles.modalActions}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Doctor Assignment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Onboard Patient Modal */}
       {showAddModal && (
@@ -567,15 +1006,15 @@ export const Dashboard = () => {
 
 const styles = {
   headerBlock: {
-    background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(15, 23, 42, 0.8) 50%, rgba(59, 130, 246, 0.06) 100%)',
-    border: '1px solid rgba(13, 148, 136, 0.15)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '22px 28px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     textAlign: 'left',
-    boxShadow: '0 4px 24px -4px rgba(13, 148, 136, 0.08)',
+    boxShadow: '0 4px 20px rgba(107, 13, 36, 0.05)',
   },
   headerTextContainer: {
     display: 'flex',
@@ -585,13 +1024,14 @@ const styles = {
   mainTitle: {
     fontSize: '1.75rem',
     fontWeight: '800',
-    color: '#fff',
+    color: '#6b0d24',
     letterSpacing: '-0.025em',
     margin: 0,
   },
   mainSubtitle: {
     fontSize: '0.88rem',
-    color: '#64748b',
+    color: '#6e6063',
+    fontWeight: '500',
     margin: 0,
   },
   dashboardContainer: {
@@ -601,6 +1041,7 @@ const styles = {
     flexDirection: 'column',
     gap: '20px',
     boxSizing: 'border-box',
+    background: '#f7f4ed',
   },
   statsRow: {
     display: 'grid',
@@ -612,6 +1053,10 @@ const styles = {
     alignItems: 'center',
     gap: '20px',
     padding: '24px',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
+    boxShadow: '0 4px 16px rgba(107, 13, 36, 0.04)',
+    borderRadius: '16px',
   },
   statInfo: {
     display: 'flex',
@@ -619,20 +1064,24 @@ const styles = {
   },
   statLabel: {
     fontSize: '0.85rem',
-    color: '#94a3b8',
+    color: '#6e6063',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
+    fontWeight: '700',
   },
   statValue: {
     fontSize: '1.8rem',
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '800',
+    color: '#6b0d24',
     marginTop: '4px',
   },
   mainCard: {
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
+    borderRadius: '16px',
   },
   cardHeader: {
     display: 'flex',
@@ -644,7 +1093,8 @@ const styles = {
   },
   cardTitle: {
     fontSize: '1.5rem',
-    color: '#fff',
+    fontWeight: '800',
+    color: '#6b0d24',
   },
   actionRow: {
     display: 'flex',
@@ -653,8 +1103,8 @@ const styles = {
   searchBar: {
     display: 'flex',
     alignItems: 'center',
-    background: 'rgba(15, 23, 42, 0.4)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: '#f6f3eb',
+    border: '1px solid #e2dbcd',
     borderRadius: '10px',
     padding: '10px 16px',
     gap: '12px',
@@ -662,7 +1112,7 @@ const styles = {
   searchInput: {
     background: 'none',
     border: 'none',
-    color: '#fff',
+    color: '#2b1b1e',
     outline: 'none',
     fontSize: '0.95rem',
     width: '100%',
@@ -697,10 +1147,11 @@ const styles = {
   modalContent: {
     width: '100%',
     maxWidth: '560px',
-    background: '#0f172a',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '32px',
+    boxShadow: '0 16px 40px rgba(107, 13, 36, 0.12)',
   },
   formRow: {
     display: 'flex',

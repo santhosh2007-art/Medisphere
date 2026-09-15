@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  Activity, LogOut, Home, Users, Cpu, BarChart2, ShieldCheck, Database, LayoutGrid 
+  Activity, LogOut, Home, Users, Cpu, BarChart2, ShieldCheck, Database, LayoutGrid, UserCheck, UserPlus, Link2, Sliders, BellRing
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -25,6 +25,19 @@ export const Sidebar = () => {
     }
   };
 
+  const handleAdminNavClick = (adminTab) => {
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('switch-admin-tab', { detail: adminTab }));
+      }, 100);
+    } else {
+      window.dispatchEvent(new CustomEvent('switch-admin-tab', { detail: adminTab }));
+    }
+  };
+
+  const isAdmin = user?.roles?.includes('ADMIN');
+
   return (
     <aside style={styles.sidebar}>
       {/* Top Brand Logo */}
@@ -40,29 +53,84 @@ export const Sidebar = () => {
 
       {/* Main Navigation Links */}
       <nav style={styles.navMenu}>
-        <div style={styles.menuGroupTitle}>Main Workspace</div>
-        
-        <button 
-          onClick={() => handleNavClick('home')} 
-          style={{ 
-            ...styles.navLink, 
-            ...(location.pathname === '/' ? styles.navLinkActive : {}) 
-          }}
-        >
-          <LayoutGrid size={18} />
-          <span>Dashboard</span>
-        </button>
+        {/* Dedicated Admin Control Panel Links for Admin User */}
+        {isAdmin && (
+          <>
+            <div style={{ ...styles.menuGroupTitle, color: '#6b0d24', borderBottom: '1px solid #e5ddd0', paddingBottom: '4px', marginBottom: '8px' }}>
+              🛡️ Admin Controls
+            </div>
 
-        <button 
-          onClick={() => handleNavClick('home')} 
-          style={{ 
-            ...styles.navLink, 
-            ...(location.pathname === '/' ? styles.navLinkActive : {}) 
-          }}
-        >
-          <Users size={18} />
-          <span>Patients</span>
-        </button>
+            <button 
+              onClick={() => handleAdminNavClick('patients')} 
+              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+            >
+              <Users size={18} color="#6b0d24" />
+              <span>Manage Patients</span>
+            </button>
+
+            <button 
+              onClick={() => handleAdminNavClick('doctors')} 
+              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+            >
+              <UserCheck size={18} color="#6b0d24" />
+              <span>Manage Doctors</span>
+            </button>
+
+            <button 
+              onClick={() => handleAdminNavClick('assign')} 
+              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+            >
+              <Link2 size={18} color="#6b0d24" />
+              <span>Assign Doctors</span>
+            </button>
+
+            <button 
+              onClick={() => handleAdminNavClick('models')} 
+              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+            >
+              <Database size={18} color="#6b0d24" />
+              <span>Model Management</span>
+            </button>
+
+            <button 
+              onClick={() => handleAdminNavClick('alerts')} 
+              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+            >
+              <BellRing size={18} color="#6b0d24" />
+              <span>Manage Alerts</span>
+            </button>
+            <div style={{ margin: '12px 0 6px', borderTop: '1px solid #e5ddd0' }} />
+          </>
+        )}
+
+        {/* Main Workspace links for Doctor and Patient roles */}
+        {!isAdmin && (
+          <>
+            <div style={styles.menuGroupTitle}>Main Workspace</div>
+            
+            <button 
+              onClick={() => handleNavClick('home')} 
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/' ? styles.navLinkActive : {}) 
+              }}
+            >
+              <LayoutGrid size={18} />
+              <span>Dashboard</span>
+            </button>
+
+            <button 
+              onClick={() => handleNavClick('home')} 
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/' ? styles.navLinkActive : {}) 
+              }}
+            >
+              <Users size={18} />
+              <span>Patients</span>
+            </button>
+          </>
+        )}
 
         <div style={styles.menuGroupTitle}>AI & Analytics</div>
 
@@ -86,6 +154,28 @@ export const Sidebar = () => {
         </button>
 
         <button 
+          onClick={() => navigate('/careplans')} 
+          style={{ 
+            ...styles.navLink, 
+            ...(location.pathname === '/careplans' ? styles.navLinkActive : {}) 
+          }}
+        >
+          <BarChart2 size={18} />
+          <span>Careplans & Interventions</span>
+        </button>
+
+        <button 
+          onClick={() => navigate('/population-rollup')} 
+          style={{ 
+            ...styles.navLink, 
+            ...(location.pathname === '/population-rollup' ? styles.navLinkActive : {}) 
+          }}
+        >
+          <ShieldCheck size={18} />
+          <span>Population Rollup</span>
+        </button>
+
+        <button 
           onClick={() => handleNavClick('ai', 'ai')} 
           style={styles.navLink}
         >
@@ -103,7 +193,7 @@ export const Sidebar = () => {
           <div style={styles.userInfo}>
             <span style={styles.userName}>{user.name || user.username}</span>
             <span style={styles.userRole}>
-              {user.roles?.includes('PROVIDER') ? 'Dr. Specialist' : user.roles?.includes('PATIENT') ? 'Patient' : 'Clinician'}
+              {user.roles?.includes('ADMIN') ? '🛡️ Admin (Ad)' : user.roles?.includes('PROVIDER') || user.roles?.includes('DOCTOR') ? '🩺 Doctor (Dr)' : '👤 Patient (Pt)'}
             </span>
           </div>
           <button onClick={logout} style={styles.logoutBtn} title="Sign Out">
@@ -121,8 +211,8 @@ const styles = {
     height: '100vh',
     position: 'sticky',
     top: 0,
-    background: '#090d16',
-    borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+    background: '#eee8dc',
+    borderRight: '1px solid #e2dad0',
     display: 'flex',
     flexDirection: 'column',
     padding: '24px 16px',
@@ -138,13 +228,14 @@ const styles = {
     padding: '0 8px',
   },
   logoContainer: {
-    background: 'rgba(13, 148, 136, 0.1)',
-    border: '1px solid rgba(13, 148, 136, 0.2)',
+    background: 'rgba(107, 13, 36, 0.08)',
+    border: '1px solid rgba(107, 13, 36, 0.18)',
     padding: '8px',
     borderRadius: '10px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    color: '#6b0d24',
   },
   brandText: {
     display: 'flex',
@@ -154,13 +245,13 @@ const styles = {
   brandName: {
     fontSize: '1.25rem',
     fontWeight: '800',
-    color: '#fff',
+    color: '#6b0d24',
     letterSpacing: '-0.025em',
   },
   brandTag: {
     fontSize: '0.62rem',
     fontWeight: '700',
-    color: '#0d9488',
+    color: '#6b0d24',
     letterSpacing: '0.1em',
     marginTop: '2px',
   },
@@ -173,7 +264,7 @@ const styles = {
   menuGroupTitle: {
     fontSize: '0.68rem',
     fontWeight: '800',
-    color: '#475569',
+    color: '#6b0d24',
     textTransform: 'uppercase',
     letterSpacing: '0.08em',
     padding: '16px 8px 8px',
@@ -185,28 +276,28 @@ const styles = {
     gap: '12px',
     background: 'transparent',
     border: 'none',
-    color: '#94a3b8',
+    color: '#2b1b1e',
     padding: '12px 14px',
     borderRadius: '10px',
     cursor: 'pointer',
     fontSize: '0.88rem',
-    fontWeight: '600',
+    fontWeight: '700',
     transition: 'all 0.2s ease',
     textAlign: 'left',
     width: '100%',
   },
   navLinkActive: {
-    background: 'rgba(13, 148, 136, 0.1)',
-    color: '#0d9488',
-    borderLeft: '2px solid #0d9488',
+    background: 'rgba(107, 13, 36, 0.12)',
+    color: '#6b0d24',
+    borderLeft: '3px solid #6b0d24',
     borderRadius: '0 10px 10px 0',
   },
   userCard: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    background: 'rgba(15, 23, 42, 0.5)',
-    border: '1px solid rgba(255, 255, 255, 0.03)',
+    background: '#ffffff',
+    border: '1px solid #e2dad0',
     padding: '12px',
     borderRadius: '12px',
     marginTop: 'auto',
@@ -215,8 +306,8 @@ const styles = {
     width: '36px',
     height: '36px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #0d9488, #3b82f6)',
-    color: '#fff',
+    background: '#6b0d24',
+    color: '#ffffff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -233,20 +324,20 @@ const styles = {
   userName: {
     fontSize: '0.82rem',
     fontWeight: '700',
-    color: '#fff',
+    color: '#2b1b1e',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
   userRole: {
     fontSize: '0.68rem',
-    color: '#64748b',
+    color: '#6e6063',
     fontWeight: '600',
   },
   logoutBtn: {
     background: 'transparent',
     border: 'none',
-    color: '#64748b',
+    color: '#6e6063',
     cursor: 'pointer',
     padding: '6px',
     borderRadius: '6px',

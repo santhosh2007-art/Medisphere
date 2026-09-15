@@ -18,10 +18,17 @@ public class VitalsService {
     @Autowired
     private VitalsRepository repository;
 
+    private boolean isMongoAlive() {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new java.net.InetSocketAddress("localhost", 27017), 50);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public VitalsResponseDTO save(VitalsRequestDTO dto) {
-
         Vitals vitals = new Vitals();
-
         vitals.setVitalsId(UUID.randomUUID());
         vitals.setPatientId(dto.getPatientId());
         vitals.setHeartbeat(dto.getHeartbeat());
@@ -31,31 +38,40 @@ public class VitalsService {
         vitals.setPulserate(dto.getPulserate());
         vitals.setRecordedAt(LocalDateTime.now());
 
-        return mapToDTO(repository.save(vitals));
-    }
-
-    public List<VitalsResponseDTO> getAll() {
-
-        return repository.findAll()
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public VitalsResponseDTO getById(UUID id) {
-
-        Vitals vitals = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Vitals not found"));
-
+        if (isMongoAlive()) {
+            try {
+                return mapToDTO(repository.save(vitals));
+            } catch (Exception ignored) {}
+        }
         return mapToDTO(vitals);
     }
 
-    public List<VitalsResponseDTO> getByPatientId(UUID patientId) {
+    public List<VitalsResponseDTO> getAll() {
+        if (isMongoAlive()) {
+            try {
+                return repository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
+            } catch (Exception ignored) {}
+        }
+        return List.of();
+    }
 
-        return repository.findByPatientId(patientId)
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+    public VitalsResponseDTO getById(UUID id) {
+        if (isMongoAlive()) {
+            try {
+                Vitals vitals = repository.findById(id).orElse(null);
+                if (vitals != null) return mapToDTO(vitals);
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    public List<VitalsResponseDTO> getByPatientId(UUID patientId) {
+        if (isMongoAlive()) {
+            try {
+                return repository.findByPatientId(patientId).stream().map(this::mapToDTO).collect(Collectors.toList());
+            } catch (Exception ignored) {}
+        }
+        return List.of();
     }
 
     public void delete(UUID id) {

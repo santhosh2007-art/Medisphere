@@ -1325,10 +1325,10 @@ export const Patient360 = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', textAlign: 'left' }}>
                     
                     {/* Top Action Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: 'rgba(15, 23, 42, 0.4)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: '#ffffff', padding: '18px 24px', borderRadius: '14px', border: '1px solid #e5ddd0', boxShadow: '0 4px 14px rgba(107, 13, 36, 0.04)' }}>
                       <div>
-                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#fff' }}>Holographic Health Predictor</h4>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
+                        <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#6b0d24' }}>Holographic Health Predictor</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#475569', fontWeight: '500' }}>
                           Simulated TensorFlow scoring model & SHAP explainability matrices.
                         </p>
                       </div>
@@ -1347,16 +1347,16 @@ export const Patient360 = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
                       
                       {/* CVD Gauge Card */}
-                      <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                      <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', background: '#ffffff', border: '1px solid #e5ddd0' }}>
                         <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <HeartPulse size={16} color="#ef4444" />
-                          <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8' }}>Cardiovascular Risk</span>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#6b0d24' }}>Cardiovascular Risk</span>
                         </div>
                         
                         <div style={{ margin: '24px 0 12px', position: 'relative', width: '120px', height: '120px' }}>
                           {/* SVG Circular Progress Gauge */}
                           <svg width="120" height="120" viewBox="0 0 120 120">
-                            <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="10" />
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="#f1e9dd" strokeWidth="10" />
                             <circle 
                               cx="60" cy="60" r="50" fill="none" 
                               stroke={cvdPrediction ? (cvdPrediction.riskLevel === 'HIGH' ? '#f43f5e' : cvdPrediction.riskLevel === 'MEDIUM' ? '#f59e0b' : '#10b981') : '#64748b'} 
@@ -1373,30 +1373,30 @@ export const Patient360 = () => {
                             />
                           </svg>
                           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff' }}>
+                            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1e293b' }}>
                               {cvdPrediction ? `${cvdPrediction.riskPercentage}%` : 'N/A'}
                             </span>
-                            <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: cvdPrediction ? (cvdPrediction.riskLevel === 'HIGH' ? '#f43f5e' : cvdPrediction.riskLevel === 'MEDIUM' ? '#f59e0b' : '#10b981') : '#94a3b8', fontWeight: 'bold' }}>
+                            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: cvdPrediction ? (cvdPrediction.riskLevel === 'HIGH' ? '#f43f5e' : cvdPrediction.riskLevel === 'MEDIUM' ? '#d97706' : '#059669') : '#475569', fontWeight: '800' }}>
                               {cvdPrediction ? cvdPrediction.riskLevel : 'Pending'}
                             </span>
                           </div>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', gap: '12px', marginTop: '8px' }}>
-                          <span>Confidence: <strong>{cvdPrediction ? `${cvdPrediction.confidence}%` : 'N/A'}</strong></span>
-                          <span>Version: <strong>{cvdPrediction ? cvdPrediction.modelVersion : 'N/A'}</strong></span>
+                        <div style={{ fontSize: '0.82rem', color: '#334155', display: 'flex', gap: '12px', marginTop: '8px', fontWeight: '600' }}>
+                          <span>Confidence: <strong style={{ color: '#1e293b' }}>{cvdPrediction ? `${cvdPrediction.confidence}%` : 'N/A'}</strong></span>
+                          <span>Version: <strong style={{ color: '#1e293b' }}>{cvdPrediction ? cvdPrediction.modelVersion : 'N/A'}</strong></span>
                         </div>
                       </div>
 
                       {/* Diabetes Gauge Card */}
-                      <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                      <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', background: '#ffffff', border: '1px solid #e5ddd0' }}>
                         <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Activity size={16} color="#eab308" />
-                          <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8' }}>Diabetes Complications Risk</span>
+                          <Activity size={16} color="#d97706" />
+                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#6b0d24' }}>Diabetes Complications Risk</span>
                         </div>
                         
                         <div style={{ margin: '24px 0 12px', position: 'relative', width: '120px', height: '120px' }}>
                           <svg width="120" height="120" viewBox="0 0 120 120">
-                            <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="10" />
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="#f1e9dd" strokeWidth="10" />
                             <circle 
                               cx="60" cy="60" r="50" fill="none" 
                               stroke={diabetesPrediction ? (diabetesPrediction.riskLevel === 'HIGH' ? '#f43f5e' : diabetesPrediction.riskLevel === 'MEDIUM' ? '#f59e0b' : '#10b981') : '#64748b'} 
@@ -1413,17 +1413,17 @@ export const Patient360 = () => {
                             />
                           </svg>
                           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff' }}>
+                            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1e293b' }}>
                               {diabetesPrediction ? `${diabetesPrediction.riskPercentage}%` : 'N/A'}
                             </span>
-                            <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: diabetesPrediction ? (diabetesPrediction.riskLevel === 'HIGH' ? '#f43f5e' : diabetesPrediction.riskLevel === 'MEDIUM' ? '#f59e0b' : '#10b981') : '#94a3b8', fontWeight: 'bold' }}>
+                            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: diabetesPrediction ? (diabetesPrediction.riskLevel === 'HIGH' ? '#f43f5e' : diabetesPrediction.riskLevel === 'MEDIUM' ? '#d97706' : '#059669') : '#475569', fontWeight: '800' }}>
                               {diabetesPrediction ? diabetesPrediction.riskLevel : 'Pending'}
                             </span>
                           </div>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', gap: '12px', marginTop: '8px' }}>
-                          <span>Confidence: <strong>{diabetesPrediction ? `${diabetesPrediction.confidence}%` : 'N/A'}</strong></span>
-                          <span>Version: <strong>{diabetesPrediction ? diabetesPrediction.modelVersion : 'N/A'}</strong></span>
+                        <div style={{ fontSize: '0.82rem', color: '#334155', display: 'flex', gap: '12px', marginTop: '8px', fontWeight: '600' }}>
+                          <span>Confidence: <strong style={{ color: '#1e293b' }}>{diabetesPrediction ? `${diabetesPrediction.confidence}%` : 'N/A'}</strong></span>
+                          <span>Version: <strong style={{ color: '#1e293b' }}>{diabetesPrediction ? diabetesPrediction.modelVersion : 'N/A'}</strong></span>
                         </div>
                       </div>
 
@@ -1433,49 +1433,49 @@ export const Patient360 = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
                       
                       {/* SHAP Factors */}
-                      <div className="glass-card" style={{ padding: '20px' }}>
-                        <h4 style={{ ...styles.twinCardTitle, fontSize: '0.95rem', marginBottom: '16px' }}>SHAP Explainability Matrix</h4>
+                      <div className="glass-card" style={{ padding: '20px', background: '#ffffff', border: '1px solid #e5ddd0' }}>
+                        <h4 style={{ ...styles.twinCardTitle, fontSize: '0.95rem', marginBottom: '16px', color: '#6b0d24' }}>SHAP Explainability Matrix</h4>
                         {explanation && explanation.factors && explanation.factors.length > 0 ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {explanation.factors.map((fact, fIdx) => (
-                              <div key={fIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{fact.split(':')[0]}</span>
-                                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#10b981' }}>{fact.split(':')[1] || '+15'}</span>
+                              <div key={fIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f6f3eb', borderRadius: '8px', border: '1px solid #e2dbcd' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: '600' }}>{fact.split(':')[0]}</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#059669' }}>{fact.split(':')[1] || '+15'}</span>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div style={{ padding: '20px 0', textAlign: 'center', color: '#64748b', fontSize: '0.82rem' }}>
+                          <div style={{ padding: '20px 0', textAlign: 'center', color: '#475569', fontSize: '0.85rem', fontWeight: '500' }}>
                             No prediction history found. Run risk assessment above to generate explanations.
                           </div>
                         )}
                       </div>
 
                       {/* Validation Audits */}
-                      <div className="glass-card" style={{ padding: '20px' }}>
-                        <h4 style={{ ...styles.twinCardTitle, fontSize: '0.95rem', marginBottom: '16px' }}>Model Compliance & Audits</h4>
+                      <div className="glass-card" style={{ padding: '20px', background: '#ffffff', border: '1px solid #e5ddd0' }}>
+                        <h4 style={{ ...styles.twinCardTitle, fontSize: '0.95rem', marginBottom: '16px', color: '#6b0d24' }}>Model Compliance & Audits</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>SHAP Explanation Validity</span>
-                            <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontWeight: 'bold' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: '600' }}>SHAP Explanation Validity</span>
+                            <span style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', color: '#047857', fontWeight: '800' }}>
                               PASSED ({explanationValidation ? `${explanationValidation.shapValuesConvergence}%` : '98.4%'})
                             </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Calibration (Brier Score)</span>
-                            <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontWeight: 'bold' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: '600' }}>Calibration (Brier Score)</span>
+                            <span style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', color: '#047857', fontWeight: '800' }}>
                               CALIBRATED ({calibrationMetrics ? calibrationMetrics.brierScore : '0.084'})
                             </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Demographic Bias Audit</span>
-                            <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontWeight: 'bold' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: '600' }}>Demographic Bias Audit</span>
+                            <span style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', color: '#047857', fontWeight: '800' }}>
                               COMPLIANT (DIR: {biasMetrics ? biasMetrics.disparateImpactRatio : '0.98'})
                             </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Federated Round Status</span>
-                            <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '4px', background: 'rgba(13, 148, 136, 0.1)', color: '#0d9488', fontWeight: 'bold' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: '600' }}>Federated Round Status</span>
+                            <span style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(13, 148, 136, 0.15)', color: '#0f766e', fontWeight: '800' }}>
                               Round {modelStatus ? modelStatus.federatedRound : '14'} ({modelStatus ? modelStatus.convergenceStatus : 'STABLE'})
                             </span>
                           </div>
@@ -1485,10 +1485,10 @@ export const Patient360 = () => {
                     </div>
 
                     {/* Model Management HUD */}
-                    <div className="glass-card" style={{ padding: '24px' }}>
+                    <div className="glass-card" style={{ padding: '24px', background: '#ffffff', border: '1px solid #e5ddd0' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h4 style={{ ...styles.twinCardTitle, margin: 0 }}>Model Versioning & Performance HUD</h4>
-                        <span style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', fontWeight: 'bold' }}>
+                        <h4 style={{ ...styles.twinCardTitle, margin: 0, color: '#6b0d24' }}>Model Versioning & Performance HUD</h4>
+                        <span style={{ fontSize: '0.78rem', padding: '5px 12px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', color: '#047857', border: '1px solid rgba(16,185,129,0.3)', fontWeight: '800' }}>
                           Active Model: v{latestModel ? latestModel.version : '1.0'} ({latestModel ? latestModel.accuracy : '91.4'}% Acc)
                         </span>
                       </div>
@@ -1496,28 +1496,28 @@ export const Patient360 = () => {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignItems: 'start' }}>
                         {/* Model table */}
                         <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                             <thead>
-                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                                <th style={{ padding: '8px', textAlign: 'left', color: '#94a3b8' }}>Version</th>
-                                <th style={{ padding: '8px', textAlign: 'left', color: '#94a3b8' }}>Accuracy</th>
-                                <th style={{ padding: '8px', textAlign: 'left', color: '#94a3b8' }}>Created</th>
-                                <th style={{ padding: '8px', textAlign: 'left', color: '#94a3b8' }}>Status</th>
-                                <th style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>Actions</th>
+                              <tr style={{ borderBottom: '2px solid #e5ddd0' }}>
+                                <th style={{ padding: '10px 8px', textAlign: 'left', color: '#6b0d24', fontWeight: '800' }}>Version</th>
+                                <th style={{ padding: '10px 8px', textAlign: 'left', color: '#6b0d24', fontWeight: '800' }}>Accuracy</th>
+                                <th style={{ padding: '10px 8px', textAlign: 'left', color: '#6b0d24', fontWeight: '800' }}>Created</th>
+                                <th style={{ padding: '10px 8px', textAlign: 'left', color: '#6b0d24', fontWeight: '800' }}>Status</th>
+                                <th style={{ padding: '10px 8px', textAlign: 'right', color: '#6b0d24', fontWeight: '800' }}>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
                               {models.map((m, idx) => (
-                                <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                                  <td style={{ padding: '8px', fontWeight: 'bold' }}>v{m.version}</td>
-                                  <td style={{ padding: '8px' }}>{m.accuracy}%</td>
-                                  <td style={{ padding: '8px', color: '#64748b' }}>{m.createdDate}</td>
-                                  <td style={{ padding: '8px' }}>
-                                    <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', background: m.status === 'ACTIVE' ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.02)', color: m.status === 'ACTIVE' ? '#10b981' : '#64748b', fontWeight: 'bold' }}>
+                                <tr key={idx} style={{ borderBottom: '1px solid #e5ddd0' }}>
+                                  <td style={{ padding: '10px 8px', fontWeight: '800', color: '#1e293b' }}>v{m.version}</td>
+                                  <td style={{ padding: '10px 8px', fontWeight: '700', color: '#1e293b' }}>{m.accuracy}%</td>
+                                  <td style={{ padding: '10px 8px', color: '#334155', fontWeight: '600' }}>{m.createdDate}</td>
+                                  <td style={{ padding: '10px 8px' }}>
+                                    <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', background: m.status === 'ACTIVE' ? 'rgba(16,185,129,0.15)' : '#f6f3eb', color: m.status === 'ACTIVE' ? '#047857' : '#475569', fontWeight: '800', border: m.status === 'ACTIVE' ? '1px solid #a7f3d0' : '1px solid #e2dbcd' }}>
                                       {m.status}
                                     </span>
                                   </td>
-                                  <td style={{ padding: '8px', textAlign: 'right' }}>
+                                  <td style={{ padding: '10px 8px', textAlign: 'right' }}>
                                     {m.status !== 'ACTIVE' && (
                                       <>
                                         <button 
@@ -1544,15 +1544,15 @@ export const Patient360 = () => {
                         </div>
 
                         {/* Add version form */}
-                        <form onSubmit={handleAddModel} style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '10px', padding: '16px' }}>
-                          <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#fff' }}>Deploy New Model Target</span>
+                        <form onSubmit={handleAddModel} style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '10px', padding: '16px' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#6b0d24' }}>Deploy New Model Target</span>
                           <div style={{ display: 'flex', gap: '12px' }}>
                             <div style={{ flex: 1 }}>
-                              <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px' }}>Version</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', color: '#334155', fontWeight: '700', marginBottom: '4px' }}>Version</label>
                               <input 
                                 type="text" 
                                 className="form-input" 
-                                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                                style={{ fontSize: '0.85rem', padding: '8px 10px', background: '#ffffff', border: '1px solid #e5ddd0', color: '#1e293b' }}
                                 value={newModelVersion}
                                 onChange={(e) => setNewModelVersion(e.target.value)}
                                 placeholder="e.g. 1.1" 
@@ -1560,12 +1560,12 @@ export const Patient360 = () => {
                               />
                             </div>
                             <div style={{ flex: 1 }}>
-                              <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px' }}>Accuracy (%)</label>
+                              <label style={{ display: 'block', fontSize: '0.75rem', color: '#334155', fontWeight: '700', marginBottom: '4px' }}>Accuracy (%)</label>
                               <input 
                                 type="number" 
                                 step="0.1"
                                 className="form-input" 
-                                style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                                style={{ fontSize: '0.85rem', padding: '8px 10px', background: '#ffffff', border: '1px solid #e5ddd0', color: '#1e293b' }}
                                 value={newModelAccuracy}
                                 onChange={(e) => setNewModelAccuracy(e.target.value)}
                                 placeholder="e.g. 92.8" 
@@ -1788,6 +1788,7 @@ const styles = {
     flexDirection: 'column',
     gap: '20px',
     boxSizing: 'border-box',
+    background: '#f7f4ed',
   },
   profileBanner: {
     display: 'flex',
@@ -1796,11 +1797,11 @@ const styles = {
     flexWrap: 'wrap',
     padding: '22px 28px',
     gap: '20px',
-    background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.12) 0%, rgba(15, 23, 42, 0.85) 40%, rgba(59, 130, 246, 0.08) 100%)',
-    border: '1px solid rgba(13, 148, 136, 0.18)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     textAlign: 'left',
-    boxShadow: '0 4px 24px -4px rgba(13, 148, 136, 0.1), inset 0 1px 0 rgba(255,255,255,0.04)',
+    boxShadow: '0 6px 20px rgba(107, 13, 36, 0.05)',
   },
   profileMain: {
     display: 'flex',
@@ -1811,14 +1812,14 @@ const styles = {
     width: '64px',
     height: '64px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #0d9488, #3b82f6)',
-    color: '#fff',
+    background: '#6b0d24',
+    color: '#ffffff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: '800',
     fontSize: '1.5rem',
-    border: '2px solid rgba(255, 255, 255, 0.1)',
+    border: '2px solid #e5ddd0',
   },
   profileMeta: {
     display: 'flex',
@@ -1828,14 +1829,15 @@ const styles = {
   profileName: {
     fontSize: '1.5rem',
     fontWeight: '800',
-    color: '#fff',
+    color: '#6b0d24',
     letterSpacing: '-0.02em',
     margin: 0,
   },
   profileId: {
     fontSize: '0.8rem',
-    color: '#64748b',
+    color: '#6e6063',
     fontFamily: 'monospace',
+    fontWeight: '600',
   },
   profilePills: {
     display: 'flex',
@@ -1845,11 +1847,12 @@ const styles = {
   },
   profilePill: {
     fontSize: '0.72rem',
-    background: 'rgba(255, 255, 255, 0.04)',
-    color: '#94a3b8',
+    background: '#f6f3eb',
+    color: '#6b0d24',
+    border: '1px solid #e2dbcd',
     padding: '3px 8px',
     borderRadius: '6px',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   profileAppointments: {
     display: 'flex',
@@ -1863,7 +1866,7 @@ const styles = {
   },
   appointmentLabel: {
     fontSize: '0.68rem',
-    color: '#64748b',
+    color: '#6e6063',
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
@@ -1871,7 +1874,7 @@ const styles = {
   appointmentVal: {
     fontSize: '0.9rem',
     fontWeight: '700',
-    color: '#fff',
+    color: '#2b1b1e',
   },
   consentBadge: {
     fontSize: '0.75rem',
@@ -1900,15 +1903,15 @@ const styles = {
   },
   demoLabel: {
     fontSize: '0.8rem',
-    color: '#64748b',
-    fontWeight: '600',
+    color: '#6e6063',
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
   },
   demoValue: {
     fontSize: '0.95rem',
-    color: '#f8fafc',
-    fontWeight: '500',
+    color: '#2b1b1e',
+    fontWeight: '600',
     marginTop: '4px',
   },
   consentCard: {
@@ -1920,7 +1923,8 @@ const styles = {
     gap: '12px',
     padding: '16px',
     borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.03)',
+    background: '#f6f3eb',
+    border: '1px solid #e2dbcd',
     marginBottom: '20px',
   },
   consentIcon: {
@@ -1937,7 +1941,7 @@ const styles = {
   },
   consentStatusDesc: {
     fontSize: '0.78rem',
-    color: '#94a3b8',
+    color: '#6e6063',
     marginTop: '4px',
     lineHeight: '1.4',
   },
@@ -1947,40 +1951,39 @@ const styles = {
   },
   consentErrBanner: {
     padding: '8px 12px',
-    background: 'rgba(244, 63, 94, 0.1)',
-    border: '1px solid rgba(244, 63, 94, 0.2)',
+    background: '#fdebed',
+    border: '1px solid #eab8bc',
     borderRadius: '6px',
-    color: '#f43f5e',
+    color: '#6b0d24',
     fontSize: '0.8rem',
     marginBottom: '14px',
   },
   consentSuccBanner: {
     padding: '8px 12px',
-    background: 'rgba(16, 185, 129, 0.1)',
-    border: '1px solid rgba(16, 185, 129, 0.2)',
+    background: '#eaf6ee',
+    border: '1px solid #bce4c8',
     borderRadius: '6px',
-    color: '#10b981',
+    color: '#19733e',
     fontSize: '0.8rem',
     marginBottom: '14px',
   },
   tabsHeader: {
     display: 'flex',
-    background: 'linear-gradient(135deg, rgba(9, 13, 22, 0.9), rgba(15, 23, 42, 0.6))',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: '#eee8dc',
+    border: '1px solid #e2dbcd',
     borderRadius: '12px',
     padding: '5px',
     gap: '4px',
-    backdropFilter: 'blur(12px)',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+    boxShadow: '0 2px 8px rgba(107,13,36,0.04)',
   },
   tabBtn: {
     flex: 1,
     padding: '10px 8px',
     background: 'none',
     border: '1px solid transparent',
-    color: '#64748b',
+    color: '#2b1b1e',
     fontSize: '0.85rem',
-    fontWeight: '600',
+    fontWeight: '800',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
@@ -1988,10 +1991,9 @@ const styles = {
     letterSpacing: '0.01em',
   },
   activeTabBtn: {
-    background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.18), rgba(59, 130, 246, 0.08))',
-    color: '#2dd4bf',
-    border: '1px solid rgba(13, 148, 136, 0.3)',
-    boxShadow: '0 0 12px -2px rgba(13, 148, 136, 0.2)',
+    background: '#6b0d24',
+    color: '#ffffff',
+    boxShadow: '0 2px 8px rgba(107, 13, 36, 0.25)',
   },
   tabContentContainer: {
     minHeight: '400px',
@@ -2006,9 +2008,9 @@ const styles = {
     justifyContent: 'center',
     padding: '80px 24px',
     textAlign: 'center',
-    background: 'rgba(30, 41, 59, 0.3)',
+    background: '#f6f3eb',
     borderRadius: '16px',
-    border: '1px solid rgba(244, 63, 94, 0.1)',
+    border: '1px solid #eab8bc',
     height: '400px',
   },
   twinGrid: {
@@ -2017,17 +2019,17 @@ const styles = {
     gap: '18px',
   },
   twinStatsCard: {
-    background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.06), rgba(30, 41, 59, 0.5))',
-    border: '1px solid rgba(13, 148, 136, 0.12)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '22px',
     textAlign: 'left',
-    boxShadow: '0 4px 20px -4px rgba(0,0,0,0.4)',
+    boxShadow: '0 4px 16px rgba(107,13,36,0.04)',
   },
   twinCardTitle: {
     fontSize: '1rem',
-    fontWeight: '700',
-    color: '#e2e8f0',
+    fontWeight: '800',
+    color: '#6b0d24',
     marginBottom: '18px',
     display: 'flex',
     alignItems: 'center',
@@ -2042,22 +2044,22 @@ const styles = {
   bioMetricItem: {
     display: 'flex',
     flexDirection: 'column',
-    background: 'rgba(9, 13, 22, 0.5)',
-    border: '1px solid rgba(255,255,255,0.04)',
-    borderLeft: '3px solid rgba(13, 148, 136, 0.5)',
+    background: '#f6f3eb',
+    border: '1px solid #e2dbcd',
+    borderLeft: '3px solid #6b0d24',
     padding: '12px',
     borderRadius: '8px',
     transition: 'border-color 0.2s',
   },
   bioMetricLabel: {
     fontSize: '0.75rem',
-    color: '#64748b',
-    fontWeight: '600',
+    color: '#6e6063',
+    fontWeight: '700',
   },
   bioMetricVal: {
     fontSize: '1.2rem',
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '800',
+    color: '#2b1b1e',
     marginTop: '4px',
   },
   diseaseList: {
@@ -2072,24 +2074,25 @@ const styles = {
   },
   diseaseTag: {
     fontSize: '0.8rem',
-    fontWeight: '600',
+    fontWeight: '700',
     padding: '4px 10px',
-    background: 'rgba(244, 63, 94, 0.1)',
-    color: '#f43f5e',
-    border: '1px solid rgba(244, 63, 94, 0.15)',
+    background: '#fdebed',
+    color: '#6b0d24',
+    border: '1px solid #eab8bc',
     borderRadius: '4px',
   },
   noDiseaseText: {
     fontSize: '0.85rem',
-    color: '#64748b',
+    color: '#6e6063',
     fontStyle: 'italic',
     marginTop: '8px',
   },
   twinVisualCard: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '24px',
+    boxShadow: '0 4px 16px rgba(107,13,36,0.04)',
   },
   twinBodyFrame: {
     display: 'flex',
@@ -2102,13 +2105,14 @@ const styles = {
     maxHeight: '260px',
   },
   vitalsTabBody: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '24px',
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
+    boxShadow: '0 4px 16px rgba(107,13,36,0.04)',
   },
   vitalsActionsHeader: {
     display: 'flex',
@@ -2127,6 +2131,10 @@ const styles = {
     alignItems: 'flex-start',
     padding: '20px',
     textAlign: 'left',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(107,13,36,0.03)',
   },
   vitalsBoxTitleRow: {
     display: 'flex',
@@ -2135,8 +2143,8 @@ const styles = {
   },
   vitalsBoxTitle: {
     fontSize: '0.85rem',
-    fontWeight: '600',
-    color: '#94a3b8',
+    fontWeight: '700',
+    color: '#6e6063',
   },
   vitalsValueRow: {
     display: 'flex',
@@ -2148,14 +2156,14 @@ const styles = {
   },
   vitalsVal: {
     fontSize: '2rem',
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '800',
+    color: '#2b1b1e',
     letterSpacing: '-0.02em',
   },
   vitalsUnit: {
     fontSize: '0.85rem',
-    color: '#64748b',
-    fontWeight: '500',
+    color: '#6e6063',
+    fontWeight: '600',
   },
   streamDot: {
     position: 'absolute',
@@ -2221,8 +2229,8 @@ const styles = {
   timelineContent: {
     display: 'flex',
     flexDirection: 'column',
-    background: 'rgba(15, 23, 42, 0.3)',
-    border: '1px solid rgba(255, 255, 255, 0.02)',
+    background: '#f6f3eb',
+    border: '1px solid #e2dbcd',
     padding: '12px 16px',
     borderRadius: '8px',
   },
@@ -2236,27 +2244,30 @@ const styles = {
   timelineAction: {
     fontSize: '0.85rem',
     fontWeight: '700',
-    color: '#0d9488',
+    color: '#6b0d24',
   },
   timelineTime: {
     fontSize: '0.75rem',
-    color: '#64748b',
+    color: '#6e6063',
+    fontWeight: '600',
   },
   timelineUser: {
     fontSize: '0.78rem',
-    color: '#94a3b8',
+    color: '#6e6063',
     marginTop: '6px',
+    fontWeight: '500',
   },
   fhirTabBody: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '24px',
     textAlign: 'left',
+    boxShadow: '0 4px 16px rgba(107,13,36,0.04)',
   },
   codeBlock: {
-    background: '#070a13',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    background: '#f6f3eb',
+    border: '1px solid #e2dbcd',
     borderRadius: '10px',
     padding: '20px',
     maxHeight: '400px',
@@ -2265,9 +2276,10 @@ const styles = {
   preCode: {
     fontFamily: 'monospace',
     fontSize: '0.82rem',
-    color: '#a7f3d0',
+    color: '#6b0d24',
     margin: 0,
     whiteSpace: 'pre-wrap',
+    fontWeight: '600',
   },
   errorContainer: {
     display: 'flex',
@@ -2288,43 +2300,45 @@ const styles = {
     flexDirection: 'column',
     gap: '12px',
     padding: '16px',
-    background: 'rgba(15, 23, 42, 0.6)',
-    border: '1px solid rgba(13, 148, 136, 0.15)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '10px',
     fontFamily: 'monospace',
     fontSize: '0.8rem',
     width: '100%',
     textAlign: 'left',
+    boxShadow: '0 4px 12px rgba(107,13,36,0.03)',
   },
   hudHeader: {
-    color: '#0d9488',
-    fontWeight: 'bold',
-    borderBottom: '1px solid rgba(13, 148, 136, 0.3)',
+    color: '#6b0d24',
+    fontWeight: '800',
+    borderBottom: '1px solid #e5ddd0',
     paddingBottom: '6px',
     marginBottom: '4px',
     letterSpacing: '0.1em',
   },
   hudRow: {
     display: 'flex',
-    justifyContent: 'space-between',
+    justify: 'space-between',
     alignItems: 'center',
     gap: '8px',
   },
   hudSystem: {
-    color: '#94a3b8',
+    color: '#6e6063',
+    fontWeight: '600',
   },
   hudNormal: {
-    color: '#10b981',
+    color: '#19733e',
     fontWeight: 'bold',
-    background: 'rgba(16, 185, 129, 0.1)',
+    background: 'rgba(25, 115, 62, 0.1)',
     padding: '2px 6px',
     borderRadius: '4px',
     fontSize: '0.7rem',
   },
   hudAlert: {
-    color: '#f43f5e',
+    color: '#6b0d24',
     fontWeight: 'bold',
-    background: 'rgba(244, 63, 94, 0.1)',
+    background: '#fdebed',
     padding: '2px 6px',
     borderRadius: '4px',
     fontSize: '0.7rem',
@@ -2335,7 +2349,7 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(10, 14, 26, 0.85)',
+    backgroundColor: 'rgba(43, 27, 30, 0.5)',
     backdropFilter: 'blur(8px)',
     display: 'flex',
     alignItems: 'center',
@@ -2346,12 +2360,12 @@ const styles = {
   modalContent: {
     width: '100%',
     maxWidth: '500px',
-    background: 'rgba(30, 41, 59, 0.85)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '28px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
-    color: '#fff',
+    boxShadow: '0 16px 40px rgba(107, 13, 36, 0.12)',
+    color: '#2b1b1e',
     maxHeight: '90vh',
     overflowY: 'auto',
   },
@@ -2361,7 +2375,7 @@ const styles = {
   },
   modalActions: {
     display: 'flex',
-    justifyContent: 'flex-end',
+    justify: 'flex-end',
     gap: '12px',
     marginTop: '24px',
   },
@@ -2369,35 +2383,38 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    background: 'rgba(16, 185, 129, 0.1)',
-    border: '1px solid rgba(16, 185, 129, 0.2)',
+    background: '#eaf6ee',
+    border: '1px solid #bce4c8',
     padding: '10px 14px',
     borderRadius: '8px',
-    color: '#10b981',
+    color: '#19733e',
     fontSize: '0.88rem',
     marginBottom: '16px',
+    fontWeight: '600',
   },
   errorBanner: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    background: 'rgba(244, 63, 94, 0.1)',
-    border: '1px solid rgba(244, 63, 94, 0.2)',
+    background: '#fdebed',
+    border: '1px solid #eab8bc',
     padding: '10px 14px',
     borderRadius: '8px',
-    color: '#f43f5e',
+    color: '#6b0d24',
     fontSize: '0.88rem',
     marginBottom: '16px',
+    fontWeight: '600',
   },
   twinSummaryCard: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '24px',
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
     textAlign: 'left',
+    boxShadow: '0 4px 16px rgba(107,13,36,0.04)',
   },
   scoreGaugeContainer: {
     position: 'relative',
@@ -2423,12 +2440,12 @@ const styles = {
   scoreValue: {
     fontSize: '1.6rem',
     fontWeight: '800',
-    color: '#fff',
+    color: '#6b0d24',
     lineHeight: '1',
   },
   scoreLabel: {
     fontSize: '0.62rem',
-    color: '#64748b',
+    color: '#6e6063',
     textTransform: 'uppercase',
     fontWeight: 'bold',
     marginTop: '2px',
@@ -2437,8 +2454,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '10px',
-    background: 'rgba(15, 23, 42, 0.4)',
-    border: '1px solid rgba(255, 255, 255, 0.02)',
+    background: '#f6f3eb',
+    border: '1px solid #e2dbcd',
     padding: '12px',
     borderRadius: '10px',
   },
@@ -2453,8 +2470,8 @@ const styles = {
     gap: '8px',
   },
   summaryMiniCard: {
-    background: 'rgba(15, 23, 42, 0.3)',
-    border: '1px solid rgba(255, 255, 255, 0.01)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '8px',
     padding: '8px',
     display: 'flex',
@@ -2464,11 +2481,11 @@ const styles = {
   summaryMiniVal: {
     fontSize: '0.9rem',
     fontWeight: '800',
-    color: '#fff',
+    color: '#2b1b1e',
   },
   summaryMiniLabel: {
     fontSize: '0.6rem',
-    color: '#64748b',
+    color: '#6e6063',
     fontWeight: '600',
     marginTop: '2px',
     textAlign: 'center',

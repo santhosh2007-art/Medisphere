@@ -6,7 +6,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-public class AipredictionserviceApplication {
+public class    AipredictionserviceApplication {
     public static void main(String[] args) {
         SpringApplication.run(AipredictionserviceApplication.class, args);
     }

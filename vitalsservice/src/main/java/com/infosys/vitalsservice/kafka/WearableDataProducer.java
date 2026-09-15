@@ -25,10 +25,13 @@ public class WearableDataProducer {
     private String topic;
 
     public void publish(VitalsRequestDTO dto) {
-
         logger.info("Publishing wearable vitals data for patient {} to topic {}",
                 dto.getPatientId(), topic);
 
-        kafkaTemplate.send(topic, dto.getPatientId().toString(), dto);
+        try {
+            kafkaTemplate.send(topic, dto.getPatientId().toString(), dto);
+        } catch (Exception e) {
+            logger.warn("Notice: Kafka broker offline. Wearable reading processed locally: {}", e.getMessage());
+        }
     }
 }

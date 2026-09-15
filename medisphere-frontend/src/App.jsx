@@ -6,6 +6,8 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Patient360 } from './pages/Patient360';
 import { RealtimeMonitoringDashboard } from './pages/RealtimeMonitoringDashboard';
+import { CareplanManagement } from './pages/CareplanManagement';
+import { PopulationHealthRollup } from './pages/PopulationHealthRollup';
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -32,6 +34,8 @@ const AppContent = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/patient/:id" element={<Patient360 />} />
             <Route path="/monitoring" element={<RealtimeMonitoringDashboard />} />
+            <Route path="/careplans" element={<CareplanManagement />} />
+            <Route path="/population-rollup" element={<PopulationHealthRollup />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
@@ -54,13 +58,13 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#0a0e1a',
+    background: '#f7f4ed',
   },
   appWrapper: {
     display: 'flex',
     flexDirection: 'row',
     minHeight: '100vh',
-    background: '#0a0e1a',
+    background: '#f7f4ed',
   },
   mainContent: {
     flex: 1,
@@ -68,7 +72,7 @@ const styles = {
     overflowY: 'auto',
     display: 'flex',
     flexDirection: 'column',
-    background: '#0a0e1a',
+    background: '#f7f4ed',
   }
 };
 

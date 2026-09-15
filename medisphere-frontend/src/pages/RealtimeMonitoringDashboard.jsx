@@ -653,8 +653,8 @@ const styles = {
   modalContent: {
     width: '100%',
     maxWidth: '640px',
-    background: '#0f172a',
-    border: '1px solid rgba(13, 148, 136, 0.3)',
+    background: '#ffffff',
+    border: '1px solid #e5ddd0',
     borderRadius: '16px',
     padding: '28px',
     textAlign: 'left',

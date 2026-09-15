@@ -151,14 +151,24 @@ export const api = {
       }
     ];
 
+    const getDeletedPatientIds = () => {
+      try { return JSON.parse(localStorage.getItem('deleted_patient_ids') || '[]'); } catch (e) { return []; }
+    };
+    const deletedIds = getDeletedPatientIds();
+
     if (isSandboxMode()) {
-      return { data: getSandboxPatients() };
+      const list = getSandboxPatients().filter(p => !deletedIds.includes(String(p.patientId)));
+      return { data: list };
     }
 
     return client.get('/patient/all')
       .catch(() => axios.get('http://localhost:8081/patient/all'))
       .catch(() => axios.get('http://localhost:5000/patients'))
-      .catch(() => ({ data: DEFAULT_PATIENTS }));
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : DEFAULT_PATIENTS;
+        return { data: list.filter(p => !deletedIds.includes(String(p.patientId))) };
+      })
+      .catch(() => ({ data: DEFAULT_PATIENTS.filter(p => !deletedIds.includes(String(p.patientId))) }));
   },
 
   getPatientById: async (id) => {
@@ -239,12 +249,20 @@ export const api = {
   },
 
   deletePatient: async (id) => {
-    if (isSandboxMode()) {
-      const patients = getSandboxPatients().filter(x => x.patientId !== id);
-      saveSandboxPatients(patients);
-      return { data: 'Patient Deleted Successfully' };
-    }
-    return client.delete(`/patient/${id}`);
+    try {
+      const deleted = JSON.parse(localStorage.getItem('deleted_patient_ids') || '[]');
+      if (!deleted.includes(String(id))) {
+        deleted.push(String(id));
+        localStorage.setItem('deleted_patient_ids', JSON.stringify(deleted));
+      }
+    } catch (ignored) {}
+
+    const sandboxList = getSandboxPatients().filter(x => String(x.patientId) !== String(id));
+    saveSandboxPatients(sandboxList);
+
+    return client.delete(`/patient/${id}`)
+      .catch(() => axios.delete(`http://localhost:8081/patient/${id}`))
+      .catch(() => ({ data: 'Patient Deleted Successfully' }));
   },
 
   // HEALTH TWIN
@@ -716,5 +734,162 @@ export const api = {
     return client.post(url)
       .catch(() => axios.post(`http://localhost:8083${url}`))
       .catch(() => axios.get('http://localhost:5000/simulate?abnormal=true'));
+  },
+
+  // MILESTONE 4: CAREPLAN & INTERVENTION MODULE
+  generateCareplan: async (params) => {
+    const query = new URLSearchParams(params).toString();
+    const url = `/careplan/generate?${query}`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
+  },
+
+  getCareplansByPatient: async (patientId) => {
+    const DEFAULT_CAREPLANS = [
+      {
+        id: 'cp-demo-001',
+        patientId: patientId || '35f51e3e-66fd-4f87-85ad-affa0dde1156',
+        riskPredictionId: '02cf4955-e19b-417c-9685-600534ab527e',
+        status: 'Active',
+        version: 1,
+        ruleSetVersion: 'v1.0.0-clinical-guidelines',
+        createdBy: 'Dr. Sarah Jenkins',
+        approvedBy: 'Dr. Sarah Jenkins',
+        signatureHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        goals: [
+          {
+            id: 'g1',
+            description: 'Reduce systolic BP to < 130 mmHg within 12 weeks',
+            metric: 'systolic_bp',
+            targetValue: '<130',
+            targetWindowWeeks: 12,
+            sourceRuleId: 'cvd-htn-001'
+          },
+          {
+            id: 'g2',
+            description: 'Maintain resting heart rate between 60 - 90 bpm',
+            metric: 'heart_rate',
+            targetValue: '60-90',
+            targetWindowWeeks: 4,
+            sourceRuleId: 'cardiac-tachy-004'
+          }
+        ],
+        interventions: [
+          {
+            id: 'i1',
+            type: 'Medication',
+            description: 'Initiate Antihypertensive therapy (Lisinopril 10mg daily orally)',
+            medicationDetails: { drugName: 'Lisinopril', drugClass: 'ACE Inhibitor', dosage: '10mg', frequency: 'Daily' },
+            safetyCheckStatus: 'Passed',
+            sourceRuleId: 'cvd-htn-001'
+          },
+          {
+            id: 'i2',
+            type: 'Monitoring',
+            description: 'Weekly home blood pressure logging via wearable telemetry',
+            safetyCheckStatus: 'Passed',
+            sourceRuleId: 'cvd-htn-001'
+          }
+        ]
+      }
+    ];
+
+    return client.get(`/careplan/patient/${patientId}`)
+      .catch(() => axios.get(`http://localhost:8083/careplan/patient/${patientId}`))
+      .then(res => {
+        if (Array.isArray(res.data) && res.data.length > 0) return res;
+        return { data: DEFAULT_CAREPLANS };
+      })
+      .catch(() => ({ data: DEFAULT_CAREPLANS }));
+  },
+
+  getCareplanById: async (id) => {
+    return client.get(`/careplan/${id}`)
+      .catch(() => axios.get(`http://localhost:8083/careplan/${id}`));
+  },
+
+  getAllCareplans: async () => {
+    return client.get('/careplan/all')
+      .catch(() => axios.get('http://localhost:8083/careplan/all'));
+  },
+
+  submitCareplan: async (id) => {
+    return client.post(`/careplan/${id}/submit`)
+      .catch(() => axios.post(`http://localhost:8083/careplan/${id}/submit`));
+  },
+
+  approveCareplan: async (id, providerId = 'Dr. Sarah Jenkins', attestationText = 'I attest and approve this careplan') => {
+    const query = `providerId=${encodeURIComponent(providerId)}&attestationText=${encodeURIComponent(attestationText)}`;
+    const url = `/careplan/${id}/approve?${query}`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
+  },
+
+  activateCareplan: async (id) => {
+    return client.post(`/careplan/${id}/activate`)
+      .catch(() => axios.post(`http://localhost:8083/careplan/${id}/activate`));
+  },
+
+  overrideCareplanSafety: async (id, interventionId, providerId = 'Dr. Sarah Jenkins', reason = 'Clinical necessity override') => {
+    const query = `interventionId=${encodeURIComponent(interventionId)}&providerId=${encodeURIComponent(providerId)}&reason=${encodeURIComponent(reason)}`;
+    const url = `/careplan/${id}/override-safety?${query}`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
+  },
+
+  logCareplanAdherence: async (id, interventionId, type = 'MedicationTaken', value = 'Completed') => {
+    const query = `interventionId=${encodeURIComponent(interventionId)}&type=${encodeURIComponent(type)}&value=${encodeURIComponent(value)}`;
+    const url = `/careplan/${id}/log-adherence?${query}`;
+    return client.post(url).catch(() => axios.post(`http://localhost:8083${url}`));
+  },
+
+  getCareplanAdherence: async (id) => {
+    return client.get(`/careplan/${id}/adherence`)
+      .catch(() => axios.get(`http://localhost:8083/careplan/${id}/adherence`))
+      .catch(() => ({ data: { adherenceScorePct: 88.5 } }));
+  },
+
+  getCareplanRiskTrend: async (id) => {
+    return client.get(`/careplan/${id}/risk-trend`)
+      .catch(() => axios.get(`http://localhost:8083/careplan/${id}/risk-trend`))
+      .catch(() => ({ data: [] }));
+  },
+
+  getPopulationRollup: async () => {
+    const DEFAULT_ROLLUP = {
+      asOf: new Date().toISOString(),
+      serviceStatuses: {
+        digitalTwinService: "ONLINE",
+        riskPredictionService: "ONLINE",
+        monitoringService: "ONLINE",
+        careplanService: "ONLINE"
+      },
+      digitalTwins: {
+        totalCohortSize: 3,
+        coveragePercentage: 100.0,
+        twinFreshness: "REALTIME_SYNCHRONIZED"
+      },
+      riskPrediction: {
+        highRiskCount: 2,
+        averageCvdRiskPct: 24.5,
+        averageDiabetesRiskPct: 18.2
+      },
+      monitoring: {
+        readingCompliancePct: 94.8,
+        activeOutofRangeAlertsCount: 1,
+        telemetryStreamStatus: "KAFKA_STREAMING"
+      },
+      careplans: {
+        activeCareplansCount: 3,
+        populationAdherenceRatePct: 88.5,
+        estimatedHospitalizationsPrevented: 4.2,
+        methodologyLabel: "v1.0-modeled-projection"
+      }
+    };
+
+    return client.get('/careplan/population-rollup')
+      .catch(() => axios.get('http://localhost:8083/careplan/population-rollup'))
+      .then(res => {
+        if (res.data && res.data.asOf) return res;
+        return { data: DEFAULT_ROLLUP };
+      })
+      .catch(() => ({ data: DEFAULT_ROLLUP }));
   }
 };

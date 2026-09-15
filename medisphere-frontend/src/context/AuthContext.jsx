@@ -32,7 +32,23 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       let loggedInUser;
-      if (role === 'PATIENT') {
+
+      if (role === 'ADMIN') {
+        const cleanUser = (usernameInput || '').trim().toLowerCase();
+        const cleanPass = (password || '').trim();
+
+        if (cleanUser !== 'admin' || cleanPass !== 'admin') {
+          throw new Error('Invalid Admin credentials. Admin ID is "admin" and Password is "admin".');
+        }
+
+        loggedInUser = {
+          username: 'admin',
+          name: 'System Administrator',
+          roles: ['ADMIN'],
+          specialty: 'ALL',
+          specialtyLabel: 'System Administrator'
+        };
+      } else if (role === 'PATIENT') {
         loggedInUser = {
           username: usernameInput || 'patient_user',
           roles: ['PATIENT'],
@@ -41,10 +57,16 @@ export const AuthProvider = ({ children }) => {
           specialty: 'ALL'
         };
       } else {
+        // DOCTOR / PROVIDER LOGIN
         const cleanUser = (usernameInput || '').trim().toLowerCase();
-        
-        if (password !== 'doctor') {
-          throw new Error('Invalid password. Password for all doctor accounts is "doctor".');
+        const cleanPass = (password || '').trim();
+
+        if (cleanPass !== 'doctor') {
+          throw new Error('Invalid password for Doctor login. Password must be "doctor".');
+        }
+
+        if (!cleanUser) {
+          throw new Error('Please enter a valid Doctor Name or ID.');
         }
 
         const DOCTOR_MAP = {
@@ -53,55 +75,65 @@ export const AuthProvider = ({ children }) => {
             name: 'Dr. Sarah Jenkins',
             specialty: 'CARDIAC',
             specialtyLabel: 'Cardiologist',
-            roles: ['PROVIDER', 'CLINICIAN']
+            roles: ['PROVIDER', 'DOCTOR']
           },
           sarah: {
             username: 'sarahjenkins',
             name: 'Dr. Sarah Jenkins',
             specialty: 'CARDIAC',
             specialtyLabel: 'Cardiologist',
-            roles: ['PROVIDER', 'CLINICIAN']
+            roles: ['PROVIDER', 'DOCTOR']
           },
           robertchen: {
             username: 'robertchen',
             name: 'Dr. Robert Chen',
             specialty: 'OXYGEN',
             specialtyLabel: 'Pulmonologist',
-            roles: ['PROVIDER', 'CLINICIAN']
+            roles: ['PROVIDER', 'DOCTOR']
           },
           robert: {
             username: 'robertchen',
             name: 'Dr. Robert Chen',
             specialty: 'OXYGEN',
             specialtyLabel: 'Pulmonologist',
-            roles: ['PROVIDER', 'CLINICIAN']
+            roles: ['PROVIDER', 'DOCTOR']
           },
           elenarostova: {
             username: 'elenarostova',
             name: 'Dr. Elena Rostova',
             specialty: 'BLOOD_PRESSURE',
             specialtyLabel: 'General Physician',
-            roles: ['PROVIDER', 'CLINICIAN']
+            roles: ['PROVIDER', 'DOCTOR']
           },
           elena: {
             username: 'elenarostova',
             name: 'Dr. Elena Rostova',
             specialty: 'BLOOD_PRESSURE',
             specialtyLabel: 'General Physician',
-            roles: ['PROVIDER', 'CLINICIAN']
+            roles: ['PROVIDER', 'DOCTOR']
           },
           doctor: {
             username: 'doctor',
-            name: 'Dr. Specialist (All Patients)',
+            name: 'Dr. Rajesh Kumar',
             specialty: 'ALL',
-            specialtyLabel: 'General Practice (All Patients)',
-            roles: ['PROVIDER', 'CLINICIAN']
+            specialtyLabel: 'General Practice (Chief Medical Officer)',
+            roles: ['PROVIDER', 'DOCTOR']
           }
         };
 
-        const docConfig = DOCTOR_MAP[cleanUser];
-        if (!docConfig) {
-          throw new Error('Invalid clinician username. Valid accounts: sarahjenkins, robertchen, elenarostova, doctor (Password: doctor).');
+        let docConfig = DOCTOR_MAP[cleanUser];
+        // If doctor name is entered dynamically (e.g. dr_smith or any name):
+        if (!docConfig && cleanUser) {
+          const formattedName = cleanUser.startsWith('dr.') || cleanUser.startsWith('dr_') 
+            ? cleanUser.toUpperCase() 
+            : `Dr. ${cleanUser.charAt(0).toUpperCase() + cleanUser.slice(1)}`;
+          docConfig = {
+            username: cleanUser,
+            name: formattedName,
+            specialty: 'ALL',
+            specialtyLabel: 'Specialist Clinician',
+            roles: ['PROVIDER', 'DOCTOR']
+          };
         }
 
         loggedInUser = docConfig;
