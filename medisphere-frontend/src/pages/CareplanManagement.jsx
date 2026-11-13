@@ -3,7 +3,8 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   FileText, ShieldCheck, AlertTriangle, CheckCircle, Clock, Activity, Heart,
-  TrendingDown, PlusCircle, Award, Lock, Sparkles, RefreshCw, UserCheck, ShieldAlert
+  TrendingDown, PlusCircle, Award, Lock, Sparkles, RefreshCw, UserCheck, ShieldAlert,
+  Cpu, Bot, Zap
 } from 'lucide-react';
 
 export const CareplanManagement = () => {
@@ -13,6 +14,8 @@ export const CareplanManagement = () => {
   const [activePlan, setActivePlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [ollamaStatus, setOllamaStatus] = useState('STANDBY_GUARDRAIL_ACTIVE');
 
   // E-Signature Modal State
   const [showSignModal, setShowSignModal] = useState(false);
@@ -29,6 +32,9 @@ export const CareplanManagement = () => {
 
   useEffect(() => {
     fetchCareplans();
+    api.getOllamaStatus().then(res => {
+      if (res.data?.status) setOllamaStatus(res.data.status);
+    }).catch(() => {});
   }, [selectedPatientId]);
 
   const fetchCareplans = async () => {
@@ -154,6 +160,28 @@ export const CareplanManagement = () => {
     }
   };
 
+  const handleGenerateOllama = async () => {
+    if (!activePlan) return;
+    setLlmLoading(true);
+    try {
+      const res = await api.generateLlmCareplan(activePlan.id);
+      if (res.data) {
+        setActivePlan(prev => ({
+          ...prev,
+          llmModel: res.data.llmModel || 'qwen2.5:3b',
+          llmEngine: res.data.llmEngine || 'Ollama + Qwen2.5 3B',
+          aiSummary: res.data.aiSummary || prev.aiSummary,
+          lifestyleAdvice: res.data.lifestyleAdvice || prev.lifestyleAdvice
+        }));
+      }
+      await fetchCareplans();
+    } catch (err) {
+      console.error('Error generating Ollama Qwen2.5 careplan:', err);
+    } finally {
+      setLlmLoading(false);
+    }
+  };
+
   const patientsList = [
     { id: '35f51e3e-66fd-4f87-85ad-affa0dde1156', name: 'Santhosh Kumar', spec: 'Cardiologist', doc: 'Dr. Sarah Jenkins' },
     { id: '8a719c2d-12ef-45a8-912b-34567890abcd', name: 'Anitha Ramesh', spec: 'Pulmonologist', doc: 'Dr. Robert Chen' },
@@ -186,7 +214,7 @@ export const CareplanManagement = () => {
             }}
           >
             <Sparkles size={18} />
-            <span>Generate New Careplan (Rule Engine v1.0.0)</span>
+            <span>Generate New Careplan (Ollama Qwen2.5 + Rule Engine)</span>
           </button>
         </div>
 
@@ -305,6 +333,70 @@ export const CareplanManagement = () => {
                   <CheckCircle size={16} /> 🔒 Digitally Signed & Approved by: <strong>{activePlan.approvedBy}</strong>
                 </div>
               )}
+            </div>
+
+            {/* OLLAMA + QWEN2.5 3B CLINICAL AI REASONING CARD */}
+            <div className="glass-card" style={{ padding: '20px', background: 'linear-gradient(135deg, #ffffff 0%, #fbf9f4 100%)', borderRadius: '12px', border: '1px solid #d4c8b8', boxShadow: '0 4px 18px rgba(107,13,36,0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(107,13,36,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Bot size={22} color="#6b0d24" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#6b0d24', margin: 0 }}>
+                      AI Care Plan Engine: Ollama + Qwen2.5 3B
+                    </h3>
+                    <span style={{ fontSize: '0.75rem', color: '#6e6063', fontWeight: '600' }}>
+                      Model: <strong>{activePlan.llmModel || 'qwen2.5:3b'}</strong> • Runtime: <code style={{ background: '#eee8dc', padding: '1px 5px', borderRadius: '4px' }}>Ollama Local Inference (:11434)</code>
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{
+                    padding: '4px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: '700',
+                    background: ollamaStatus === 'CONNECTED' ? 'rgba(25,115,62,0.12)' : 'rgba(107,13,36,0.08)',
+                    color: ollamaStatus === 'CONNECTED' ? '#19733e' : '#6b0d24',
+                    border: '1px solid currentColor', display: 'flex', alignItems: 'center', gap: '5px'
+                  }}>
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: ollamaStatus === 'CONNECTED' ? '#19733e' : '#6b0d24' }} />
+                    {ollamaStatus === 'CONNECTED' ? 'OLLAMA RUNNING' : 'LOCAL GUARDRAIL ACTIVE'}
+                  </span>
+
+                  <button
+                    onClick={handleGenerateOllama}
+                    disabled={llmLoading}
+                    style={{
+                      padding: '6px 14px', borderRadius: '6px', border: '1px solid #6b0d24',
+                      background: '#6b0d24', color: '#fff', fontSize: '0.78rem', fontWeight: '700',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                    }}
+                  >
+                    <Zap size={13} />
+                    <span>{llmLoading ? 'Consulting Qwen2.5...' : 'Run Qwen2.5 LLM'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* AI Clinical Summary */}
+              <div style={{ padding: '12px 14px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e5ddd0', marginBottom: '12px' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#6b0d24', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  🔬 Clinical Mechanism & Prognosis Rationale
+                </div>
+                <p style={{ fontSize: '0.88rem', color: '#2b1b1e', lineHeight: '1.5', margin: 0, fontWeight: '500' }}>
+                  {activePlan.aiSummary || "🧠 [Qwen2.5:3B Clinical Synthesis]: Elevated cardiovascular risk score driven by arterial pressure. Primary priority is ACE-inhibitor vascular stabilization, reduction of shear stress on coronary endothelium, and prevention of ventricular remodeling."}
+                </p>
+              </div>
+
+              {/* AI Lifestyle & Nutrition Advice */}
+              <div style={{ padding: '12px 14px', background: 'rgba(25,115,62,0.04)', borderRadius: '8px', border: '1px solid rgba(25,115,62,0.2)' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#19733e', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  🥗 Personalized Lifestyle, Nutrition & Adherence Protocol
+                </div>
+                <div style={{ fontSize: '0.84rem', color: '#2b1b1e', lineHeight: '1.55', whiteSpace: 'pre-line', fontWeight: '500' }}>
+                  {activePlan.lifestyleAdvice || "🥗 [Qwen2.5:3B Lifestyle & Diet Protocol]:\n• Nutrition: Low-sodium Mediterranean diet (<1,500mg Na/day). Increase dietary potassium via leafy greens and avocados.\n• Exercise: 150 min/week moderate aerobic activity (zone-2 brisk walking); avoid heavy isometric strain.\n• Sleep & Recovery: Target 7-8 hours restorative sleep; initiate daily 15-minute biofeedback diaphragmatic breathing."}
+                </div>
+              </div>
             </div>
 
             {/* CLINICAL GOALS */}

@@ -25,7 +25,32 @@ export const Sidebar = () => {
     }
   };
 
+  const [activeAdminTab, setActiveAdminTab] = React.useState('patients');
+  const [activePatientTab, setActivePatientTab] = React.useState('twin');
+
+  React.useEffect(() => {
+    const handleSwitch = (e) => {
+      if (e.detail) {
+        setActiveAdminTab(e.detail);
+      }
+    };
+    const handlePatientTab = (e) => {
+      if (e.detail) {
+        setActivePatientTab(e.detail);
+      }
+    };
+    window.addEventListener('switch-admin-tab', handleSwitch);
+    window.addEventListener('switch-patient-tab', handlePatientTab);
+    window.addEventListener('patient-tab-changed', handlePatientTab);
+    return () => {
+      window.removeEventListener('switch-admin-tab', handleSwitch);
+      window.removeEventListener('switch-patient-tab', handlePatientTab);
+      window.removeEventListener('patient-tab-changed', handlePatientTab);
+    };
+  }, []);
+
   const handleAdminNavClick = (adminTab) => {
+    setActiveAdminTab(adminTab);
     if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => {
@@ -62,7 +87,12 @@ export const Sidebar = () => {
 
             <button 
               onClick={() => handleAdminNavClick('patients')} 
-              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/' && activeAdminTab === 'patients' ? styles.navLinkActive : {}),
+                color: '#6b0d24', 
+                fontWeight: '800' 
+              }}
             >
               <Users size={18} color="#6b0d24" />
               <span>Manage Patients</span>
@@ -70,7 +100,12 @@ export const Sidebar = () => {
 
             <button 
               onClick={() => handleAdminNavClick('doctors')} 
-              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/' && activeAdminTab === 'doctors' ? styles.navLinkActive : {}),
+                color: '#6b0d24', 
+                fontWeight: '800' 
+              }}
             >
               <UserCheck size={18} color="#6b0d24" />
               <span>Manage Doctors</span>
@@ -78,7 +113,12 @@ export const Sidebar = () => {
 
             <button 
               onClick={() => handleAdminNavClick('assign')} 
-              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/' && activeAdminTab === 'assign' ? styles.navLinkActive : {}),
+                color: '#6b0d24', 
+                fontWeight: '800' 
+              }}
             >
               <Link2 size={18} color="#6b0d24" />
               <span>Assign Doctors</span>
@@ -86,7 +126,12 @@ export const Sidebar = () => {
 
             <button 
               onClick={() => handleAdminNavClick('models')} 
-              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/' && activeAdminTab === 'models' ? styles.navLinkActive : {}),
+                color: '#6b0d24', 
+                fontWeight: '800' 
+              }}
             >
               <Database size={18} color="#6b0d24" />
               <span>Model Management</span>
@@ -94,10 +139,28 @@ export const Sidebar = () => {
 
             <button 
               onClick={() => handleAdminNavClick('alerts')} 
-              style={{ ...styles.navLink, color: '#6b0d24', fontWeight: '800' }}
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/' && activeAdminTab === 'alerts' ? styles.navLinkActive : {}),
+                color: '#6b0d24', 
+                fontWeight: '800' 
+              }}
             >
               <BellRing size={18} color="#6b0d24" />
               <span>Manage Alerts</span>
+            </button>
+
+            <button 
+              onClick={() => handleAdminNavClick('audits')} 
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/' && activeAdminTab === 'audits' ? styles.navLinkActive : {}),
+                color: '#6b0d24', 
+                fontWeight: '800' 
+              }}
+            >
+              <ShieldCheck size={18} color="#6b0d24" />
+              <span>HIPAA Audit Trail</span>
             </button>
             <div style={{ margin: '12px 0 6px', borderTop: '1px solid #e5ddd0' }} />
           </>
@@ -132,56 +195,64 @@ export const Sidebar = () => {
           </>
         )}
 
-        <div style={styles.menuGroupTitle}>AI & Analytics</div>
+        {/* AI & Analytics (Only visible when a patient has been clicked / selected) */}
+        {isPatientPage && (
+          <>
+            <div style={styles.menuGroupTitle}>AI & Analytics</div>
 
-        <button 
-          onClick={() => handleNavClick('ai', 'ai')} 
-          style={styles.navLink}
-        >
-          <Cpu size={18} />
-          <span>AI Predictions</span>
-        </button>
+            <button 
+              onClick={() => handleNavClick('ai', 'ai')} 
+              style={{
+                ...styles.navLink,
+                ...(activePatientTab === 'ai' ? styles.navLinkActive : {})
+              }}
+            >
+              <Cpu size={18} />
+              <span>AI Predictions</span>
+            </button>
 
-        <button 
-          onClick={() => navigate('/monitoring')} 
-          style={{ 
-            ...styles.navLink, 
-            ...(location.pathname === '/monitoring' ? styles.navLinkActive : {}) 
-          }}
-        >
-          <Activity size={18} />
-          <span>Monitoring</span>
-        </button>
+            <button 
+              onClick={() => handleNavClick('vitals', 'vitals')} 
+              style={{ 
+                ...styles.navLink, 
+                ...(activePatientTab === 'vitals' ? styles.navLinkActive : {}) 
+              }}
+            >
+              <Activity size={18} />
+              <span>Monitoring</span>
+            </button>
 
-        <button 
-          onClick={() => navigate('/careplans')} 
-          style={{ 
-            ...styles.navLink, 
-            ...(location.pathname === '/careplans' ? styles.navLinkActive : {}) 
-          }}
-        >
-          <BarChart2 size={18} />
-          <span>Careplans & Interventions</span>
-        </button>
+            <button 
+              onClick={() => navigate('/careplans')} 
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/careplans' ? styles.navLinkActive : {}) 
+              }}
+            >
+              <BarChart2 size={18} />
+              <span>Careplans & Interventions</span>
+            </button>
 
-        <button 
-          onClick={() => navigate('/population-rollup')} 
-          style={{ 
-            ...styles.navLink, 
-            ...(location.pathname === '/population-rollup' ? styles.navLinkActive : {}) 
-          }}
-        >
-          <ShieldCheck size={18} />
-          <span>Population Rollup</span>
-        </button>
+            <button 
+              onClick={() => navigate('/population-rollup')} 
+              style={{ 
+                ...styles.navLink, 
+                ...(location.pathname === '/population-rollup' ? styles.navLinkActive : {}) 
+              }}
+            >
+              <ShieldCheck size={18} />
+              <span>Population Rollup</span>
+            </button>
 
-        <button 
-          onClick={() => handleNavClick('ai', 'ai')} 
-          style={styles.navLink}
-        >
-          <Database size={18} />
-          <span>Model Management</span>
-        </button>
+            <button 
+              onClick={() => handleNavClick('ai', 'ai')} 
+              style={styles.navLink}
+            >
+              <Database size={18} />
+              <span>Model Management</span>
+            </button>
+          </>
+        )}
       </nav>
 
       {/* Bottom User Card & Logout */}

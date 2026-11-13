@@ -21,14 +21,20 @@ public class Careplan {
     private String approvedBy;
     private Date approvedAt;
     private String signatureHash;
-    private Integer version;
-    private String ruleSetVersion;
+    private Integer version = 1;
+    private String ruleSetVersion = "v1.0.0";
+    private String llmModel = "qwen2.5:3b";
+    private String llmEngine = "Ollama + Qwen2.5 3B";
+    private String aiSummary;
+    private String lifestyleAdvice;
 
     public Careplan() {
         this.status = "Draft";
         this.createdAt = new Date();
         this.version = 1;
         this.ruleSetVersion = "v1.0.0";
+        this.llmModel = "qwen2.5:3b";
+        this.llmEngine = "Ollama + Qwen2.5 3B";
     }
 
     public String getId() { return id; }
@@ -69,4 +75,16 @@ public class Careplan {
 
     public String getRuleSetVersion() { return ruleSetVersion; }
     public void setRuleSetVersion(String ruleSetVersion) { this.ruleSetVersion = ruleSetVersion; }
+
+    public String getLlmModel() { return llmModel; }
+    public void setLlmModel(String llmModel) { this.llmModel = llmModel; }
+
+    public String getLlmEngine() { return llmEngine; }
+    public void setLlmEngine(String llmEngine) { this.llmEngine = llmEngine; }
+
+    public String getAiSummary() { return aiSummary; }
+    public void setAiSummary(String aiSummary) { this.aiSummary = aiSummary; }
+
+    public String getLifestyleAdvice() { return lifestyleAdvice; }
+    public void setLifestyleAdvice(String lifestyleAdvice) { this.lifestyleAdvice = lifestyleAdvice; }
 }

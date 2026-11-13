@@ -20,7 +20,7 @@ public class ModelController {
 
     @PostMapping
     public ResponseEntity<ModelInfo> addModel(@RequestBody ModelInfo model) {
-        return ResponseEntity.ok(service.addModel(model));
+        return ResponseEntity.ok(service.addModel(model));3
     }
 
     @GetMapping

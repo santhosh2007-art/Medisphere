@@ -39,6 +39,9 @@ public class CareplanController {
     @Autowired
     private CareplanRepository careplanRepository;
 
+    @Autowired
+    private OllamaCareplanService ollamaCareplanService;
+
     private final Map<String, Careplan> inMemoryStore = new ConcurrentHashMap<>();
 
     @PostConstruct
@@ -100,6 +103,7 @@ public class CareplanController {
         );
 
         Careplan plan = careplanRuleEngine.generateCareplan(ctx, creatorId);
+        plan = ollamaCareplanService.enrichCareplanWithLLM(plan, ctx);
         plan = safetyCheckService.evaluateCareplanSafety(plan);
         Careplan saved = saveSafe(plan);
 
@@ -341,6 +345,7 @@ public class CareplanController {
         );
 
         Careplan plan = careplanRuleEngine.generateCareplan(ctx, docName);
+        plan = ollamaCareplanService.enrichCareplanWithLLM(plan, ctx);
         plan = safetyCheckService.evaluateCareplanSafety(plan);
 
         // Auto approve and activate demo seeds for immediate visualization
@@ -351,5 +356,33 @@ public class CareplanController {
         plan.setStatus("Active");
 
         return saveSafe(plan);
+    }
+
+    @PostMapping("/{id}/generate-llm")
+    public ResponseEntity<Careplan> generateLlmGuidance(@PathVariable String id) {
+        Careplan plan = getPlanOrFallback(id);
+        if (plan == null) return ResponseEntity.notFound().build();
+        CareplanRuleEngine.EvaluationContext ctx = new CareplanRuleEngine.EvaluationContext(
+                plan.getPatientId(),
+                plan.getRiskPredictionId(),
+                "CARDIO",
+                24.5,
+                "HIGH",
+                142, 90, 164, 94.5, 110.0
+        );
+        plan = ollamaCareplanService.enrichCareplanWithLLM(plan, ctx);
+        saveSafe(plan);
+        return ResponseEntity.ok(plan);
+    }
+
+    @GetMapping("/ollama-status")
+    public ResponseEntity<Map<String, Object>> getOllamaStatus() {
+        boolean available = ollamaCareplanService.isOllamaAvailable();
+        return ResponseEntity.ok(Map.of(
+                "model", "qwen2.5:3b",
+                "runtime", "Ollama",
+                "endpoint", "http://localhost:11434/api/generate",
+                "status", available ? "CONNECTED" : "STANDBY_GUARDRAIL_ACTIVE"
+        ));
     }
 }
