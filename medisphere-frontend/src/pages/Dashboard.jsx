@@ -336,7 +336,7 @@ export const Dashboard = () => {
 
       {/* Role Capabilities Banner (Matching Slide 8 & Slide 4) */}
       <div className="glass-card" style={{ marginBottom: '24px', padding: '16px 20px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e5ddd0', boxShadow: '0 4px 16px rgba(107, 13, 36, 0.05)', textAlign: 'left' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: !isAdmin ? '12px' : '0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800', background: 'rgba(107,13,36,0.1)', color: '#6b0d24', border: '1px solid #6b0d24' }}>
               {isAdmin ? 'Ad - Admin Portal' : user?.roles?.includes('PROVIDER') || user?.roles?.includes('DOCTOR') ? 'Dr - Doctor Portal' : 'Pt - Patient Portal'}
@@ -349,30 +349,6 @@ export const Dashboard = () => {
             Role-Based Experience: Unified EHR Platform
           </span>
         </div>
-
-        {/* Role Capabilities list for Doctor and Patient roles (Admin controls are in the left sidebar) */}
-        {!isAdmin && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {user?.roles?.includes('PROVIDER') || user?.roles?.includes('DOCTOR') ? (
-              <>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View assigned patients</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View patient health information</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View predictions</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ Review alerts</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ Review / approve care plans</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ Monitor patient progress</span>
-              </>
-            ) : (
-              <>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View health information</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View vitals</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View predictions</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ View care plan</span>
-                <span style={{ padding: '4px 10px', background: '#f6f3eb', border: '1px solid #e2dbcd', borderRadius: '6px', fontSize: '0.78rem', color: '#2b1b1e', fontWeight: '600' }}>✓ Track adherence</span>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Stats Cards Row */}
