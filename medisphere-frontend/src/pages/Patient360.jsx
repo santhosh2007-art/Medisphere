@@ -1282,15 +1282,6 @@ export const Patient360 = () => {
                       </div>
 
                     </div>
-
-                    <div style={styles.educationalPanel}>
-                      <Info size={16} color="#0d9488" style={{ flexShrink: 0 }} />
-                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', textAlign: 'left' }}>
-                        <strong>Student Insight:</strong> When you click "Simulate Stream", the client invokes the 
-                        <code> /vitals/wearable/publish</code> gateway endpoint which triggers a Spring Kafka Producer. 
-                        A Spring Kafka Consumer catches the message from the topic and updates the MongoDB database, showing how Kafka decouples systems.
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>

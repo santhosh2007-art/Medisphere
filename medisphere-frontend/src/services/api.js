@@ -967,8 +967,8 @@ export const api = {
         data: {
           llmModel: 'qwen2.5:3b',
           llmEngine: 'Ollama + Qwen2.5 3B',
-          aiSummary: '🧠 [Qwen2.5:3B Clinical Synthesis]: Multi-factor assessment shows elevated cardiovascular resistance. Recommending ACE-inhibitor vascular stabilization and endothelial protection.',
-          lifestyleAdvice: '🥗 [Qwen2.5:3B Lifestyle & Diet Protocol]:\n• Nutrition: Low-sodium DASH diet (<1,500mg Na/day). Increase dietary potassium.\n• Exercise: 150 mins/week zone-2 aerobic conditioning (brisk walking).\n• Recovery: 7-8 hours sleep and daily diaphragmatic breathing.'
+          aiSummary: 'Multi-factor assessment shows elevated cardiovascular resistance. Recommending ACE-inhibitor vascular stabilization and endothelial protection.',
+          lifestyleAdvice: '• Nutrition: Low-sodium DASH diet (<1,500mg Na/day). Increase dietary potassium.\n• Exercise: 150 mins/week zone-2 aerobic conditioning (brisk walking).\n• Recovery: 7-8 hours sleep and daily diaphragmatic breathing.'
         }
       }));
   },

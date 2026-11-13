@@ -214,7 +214,7 @@ export const CareplanManagement = () => {
             }}
           >
             <Sparkles size={18} />
-            <span>Generate New Careplan (Ollama Qwen2.5 + Rule Engine)</span>
+            <span>Generate New Careplan</span>
           </button>
         </div>
 
@@ -344,10 +344,10 @@ export const CareplanManagement = () => {
                   </div>
                   <div>
                     <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#6b0d24', margin: 0 }}>
-                      AI Care Plan Engine: Ollama + Qwen2.5 3B
+                      AI Care Plan Engine
                     </h3>
                     <span style={{ fontSize: '0.75rem', color: '#6e6063', fontWeight: '600' }}>
-                      Model: <strong>{activePlan.llmModel || 'qwen2.5:3b'}</strong> • Runtime: <code style={{ background: '#eee8dc', padding: '1px 5px', borderRadius: '4px' }}>Ollama Local Inference (:11434)</code>
+                      Automated Clinical Synthesis & Precision Guidance
                     </span>
                   </div>
                 </div>
@@ -360,7 +360,7 @@ export const CareplanManagement = () => {
                     border: '1px solid currentColor', display: 'flex', alignItems: 'center', gap: '5px'
                   }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: ollamaStatus === 'CONNECTED' ? '#19733e' : '#6b0d24' }} />
-                    {ollamaStatus === 'CONNECTED' ? 'OLLAMA RUNNING' : 'LOCAL GUARDRAIL ACTIVE'}
+                    {ollamaStatus === 'CONNECTED' ? 'AI SERVICE ACTIVE' : 'LOCAL GUARDRAIL ACTIVE'}
                   </span>
 
                   <button
@@ -373,7 +373,7 @@ export const CareplanManagement = () => {
                     }}
                   >
                     <Zap size={13} />
-                    <span>{llmLoading ? 'Consulting Qwen2.5...' : 'Run Qwen2.5 LLM'}</span>
+                    <span>{llmLoading ? 'Consulting AI...' : 'Run AI Analysis'}</span>
                   </button>
                 </div>
               </div>
@@ -384,7 +384,7 @@ export const CareplanManagement = () => {
                   🔬 Clinical Mechanism & Prognosis Rationale
                 </div>
                 <p style={{ fontSize: '0.88rem', color: '#2b1b1e', lineHeight: '1.5', margin: 0, fontWeight: '500' }}>
-                  {activePlan.aiSummary || "🧠 [Qwen2.5:3B Clinical Synthesis]: Elevated cardiovascular risk score driven by arterial pressure. Primary priority is ACE-inhibitor vascular stabilization, reduction of shear stress on coronary endothelium, and prevention of ventricular remodeling."}
+                  {activePlan.aiSummary || "Elevated cardiovascular risk score driven by arterial pressure. Primary priority is ACE-inhibitor vascular stabilization, reduction of shear stress on coronary endothelium, and prevention of ventricular remodeling."}
                 </p>
               </div>
 
@@ -394,7 +394,7 @@ export const CareplanManagement = () => {
                   🥗 Personalized Lifestyle, Nutrition & Adherence Protocol
                 </div>
                 <div style={{ fontSize: '0.84rem', color: '#2b1b1e', lineHeight: '1.55', whiteSpace: 'pre-line', fontWeight: '500' }}>
-                  {activePlan.lifestyleAdvice || "🥗 [Qwen2.5:3B Lifestyle & Diet Protocol]:\n• Nutrition: Low-sodium Mediterranean diet (<1,500mg Na/day). Increase dietary potassium via leafy greens and avocados.\n• Exercise: 150 min/week moderate aerobic activity (zone-2 brisk walking); avoid heavy isometric strain.\n• Sleep & Recovery: Target 7-8 hours restorative sleep; initiate daily 15-minute biofeedback diaphragmatic breathing."}
+                  {activePlan.lifestyleAdvice || "• Nutrition: Low-sodium Mediterranean diet (<1,500mg Na/day). Increase dietary potassium via leafy greens and avocados.\n• Exercise: 150 min/week moderate aerobic activity (zone-2 brisk walking); avoid heavy isometric strain.\n• Sleep & Recovery: Target 7-8 hours restorative sleep; initiate daily 15-minute biofeedback diaphragmatic breathing."}
                 </div>
               </div>
             </div>
